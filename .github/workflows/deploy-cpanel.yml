@@ -1,0 +1,42 @@
+name: Direct Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy-cpanel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build Production Assets
+        run: npm run build
+
+      - name: Copy .htaccess to dist
+        run: cp .htaccess dist/.htaccess || true
+
+      - name: Deploy to cPanel Host
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ${{ secrets.CPANEL_FTP_PROTOCOL || 'ftps' }}
+          port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
+          local-dir: ./dist/
+          server-dir: ${{ secrets.CPANEL_TARGET_DIR || 'public_html/' }}
+          dangerous-clean-slate: false

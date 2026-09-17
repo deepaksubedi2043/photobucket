@@ -1,0 +1,35 @@
+name: Sync to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  sync-to-huggingface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_REPO" ]; then
+            echo "::error::HF_TOKEN and HF_SPACE_REPO secrets must be configured in your GitHub repository secrets."
+            exit 1
+          fi
+
+          echo "Configuring git credentials for Hugging Face Spaces..."
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+
+          # Push repository to target Hugging Face space
+          git push --force "https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_REPO" HEAD:main
