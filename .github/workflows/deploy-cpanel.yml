@@ -1,4 +1,4 @@
-name: Direct Deploy to cPanel
+name: Deploy to cPanel via FTP
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 
 jobs:
   deploy-cpanel:
+    name: Build & Deploy to cPanel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -27,16 +28,31 @@ jobs:
         run: npm run build
 
       - name: Copy .htaccess to dist
-        run: cp .htaccess dist/.htaccess || true
+        run: cp .htaccess dist/.htaccess || cp public/.htaccess dist/.htaccess || true
+
+      - name: Check cPanel Secrets
+        id: check_secrets
+        env:
+          SERVER: ${{ secrets.CPANEL_FTP_SERVER || vars.CPANEL_FTP_SERVER }}
+          USER: ${{ secrets.CPANEL_FTP_USERNAME || vars.CPANEL_FTP_USERNAME }}
+          PASS: ${{ secrets.CPANEL_FTP_PASSWORD }}
+        run: |
+          if [ -z "$SERVER" ] || [ -z "$USER" ] || [ -z "$PASS" ]; then
+            echo "::warning::cPanel FTP secrets (CPANEL_FTP_SERVER, CPANEL_FTP_USERNAME, CPANEL_FTP_PASSWORD) are not fully configured. Skipping cPanel deployment step."
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Deploy to cPanel Host
+        if: steps.check_secrets.outputs.configured == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.CPANEL_FTP_SERVER }}
-          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          server: ${{ secrets.CPANEL_FTP_SERVER || vars.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME || vars.CPANEL_FTP_USERNAME }}
           password: ${{ secrets.CPANEL_FTP_PASSWORD }}
-          protocol: ${{ secrets.CPANEL_FTP_PROTOCOL || 'ftps' }}
-          port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
+          protocol: ${{ secrets.CPANEL_FTP_PROTOCOL || vars.CPANEL_FTP_PROTOCOL || 'ftps' }}
+          port: ${{ secrets.CPANEL_FTP_PORT || vars.CPANEL_FTP_PORT || 21 }}
           local-dir: ./dist/
-          server-dir: ${{ secrets.CPANEL_TARGET_DIR || 'public_html/' }}
+          server-dir: ${{ secrets.CPANEL_TARGET_DIR || secrets.CPANEL_REMOTE_DIR || vars.CPANEL_TARGET_DIR || vars.CPANEL_REMOTE_DIR || 'public_html/' }}
           dangerous-clean-slate: false

@@ -1,4 +1,4 @@
-name: Sync to Hugging Face Spaces
+name: Deploy to Hugging Face Spaces
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 
 jobs:
   sync-to-huggingface:
+    name: Sync to Hugging Face Space
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -17,19 +18,53 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face Space
+      - name: Push to Hugging Face Spaces
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN || vars.HF_TOKEN }}
+          HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME || vars.HF_SPACE_NAME || secrets.HF_SPACE_REPO || vars.HF_SPACE_REPO || secrets.HF_SPACE || vars.HF_SPACE }}
         run: |
-          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_REPO" ]; then
-            echo "::error::HF_TOKEN and HF_SPACE_REPO secrets must be configured in your GitHub repository secrets."
+          echo "Checking Hugging Face credentials..."
+          MISSING_CONFIG=0
+
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::❌ HF_TOKEN is missing! Please go to your GitHub repository Settings -> Secrets and variables -> Actions -> 'New repository secret', name it 'HF_TOKEN', and paste your Hugging Face write token (e.g. hf_...)."
+            MISSING_CONFIG=1
+          else
+            echo "✅ HF_TOKEN is configured."
+          fi
+
+          if [ -z "$HF_SPACE_NAME" ]; then
+            echo "::error::❌ HF_SPACE_NAME is missing! Please go to your GitHub repository Settings -> Secrets and variables -> Actions -> 'New repository secret' or 'New repository variable', name it 'HF_SPACE_NAME', and set value to 'your-hf-username/your-space-name' (e.g. deepaksubedi/photobucket-nepal)."
+            MISSING_CONFIG=1
+          else
+            echo "✅ HF_SPACE_NAME is configured: $HF_SPACE_NAME"
+          fi
+
+          if [ "$MISSING_CONFIG" -eq 1 ]; then
+            echo ""
+            echo "---------------------------------------------------------"
+            echo "📌 HOW TO FIX THIS IN GITHUB:"
+            echo "1. Open your GitHub Repository in your browser."
+            echo "2. Click 'Settings' (top tab) -> 'Secrets and variables' (left sidebar) -> 'Actions'."
+            echo "3. Under 'Repository secrets', click 'New repository secret':"
+            echo "   - Name: HF_TOKEN"
+            echo "   - Secret: [Paste your Hugging Face Access Token with WRITE permission]"
+            echo "4. Under 'Repository secrets' (or 'Repository variables'):"
+            echo "   - Name: HF_SPACE_NAME"
+            echo "   - Secret/Value: username/space-name (e.g. username/photo-bucket)"
+            echo "---------------------------------------------------------"
             exit 1
           fi
 
-          echo "Configuring git credentials for Hugging Face Spaces..."
+          # Clean Space Name if user entered full URL by mistake
+          CLEAN_SPACE=$(echo "$HF_SPACE_NAME" | sed 's~https://huggingface.co/spaces/~~' | sed 's~http://huggingface.co/spaces/~~' | sed 's~^/~~' | sed 's~/$~~')
+
+          echo "Configuring git author details..."
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Actions"
 
-          # Push repository to target Hugging Face space
-          git push --force "https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_REPO" HEAD:main
+          echo "Pushing code to https://huggingface.co/spaces/$CLEAN_SPACE ..."
+          git remote remove hf 2>/dev/null || true
+          git remote add hf "https://user:${HF_TOKEN}@huggingface.co/spaces/${CLEAN_SPACE}"
+          git push --force hf HEAD:main
+          echo "🎉 Successfully synchronized with Hugging Face Space!"
