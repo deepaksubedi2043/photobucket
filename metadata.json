@@ -1,0 +1,10 @@
+{
+  "name": "Remix Photo Bucket",
+  "description": "Instagram of Nepali Users featuring real-time synchronization, image sharing, community discovery, location tagging, and cultural feeds in Nepali and English.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

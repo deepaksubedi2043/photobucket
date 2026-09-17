@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Health check collection for bootstrapping connection test
+    match /test/{testId} {
+      allow read: if true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'deepaksubedi32@gmail.com' ||
+        request.auth.token.email == 'medeepaksubedi@gmail.com'
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isValidId(userId);
+      allow create: if isOwner(userId)
+                    && request.resource.data.id == userId
+                    && request.resource.data.username is string
+                    && request.resource.data.username.size() <= 60;
+      allow update: if (isOwner(userId) || isAdmin())
+                    && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // Posts collection
+    match /posts/{postId} {
+      allow read: if isValidId(postId);
+      allow create: if isSignedIn()
+                    && isValidId(postId)
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.caption is string
+                    && request.resource.data.caption.size() <= 2000
+                    && request.resource.data.imageUrl is string;
+      allow update: if (isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin()))
+                    || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if isValidId(commentId);
+        allow create: if isSignedIn()
+                      && isValidId(commentId)
+                      && request.resource.data.userId == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() <= 1000;
+        allow delete: if isSignedIn() && (
+          resource.data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/posts/$(postId)).data.userId == request.auth.uid ||
+          isAdmin()
+        );
+      }
+
+      // Likes subcollection
+      match /likes/{userId} {
+        allow read: if isValidId(userId);
+        allow create, update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Stories collection
+    match /stories/{storyId} {
+      allow read: if isValidId(storyId);
+      allow create: if isSignedIn()
+                    && isValidId(storyId)
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.imageUrl is string;
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Scrolling Ads & Announcements collection (SuperAdmin managed)
+    match /scrolling_ads/{adId} {
+      allow read: if isValidId(adId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Company GIF Advertisements in Footer (3 Blocks)
+    match /company_gif_ads/{adId} {
+      allow read: if isValidId(adId);
+      allow write: if isSignedIn() || isAdmin();
+    }
+  }
+}
+

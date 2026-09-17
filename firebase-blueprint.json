@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile containing public identity, district, bio and account status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 60, "pattern": "^[a-zA-Z0-9_]+$" },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "nepaliName": { "type": "string", "maxLength": 100 },
+        "avatar": { "type": "string", "maxLength": 2048 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "location": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 50 },
+        "city": { "type": "string", "maxLength": 50 },
+        "province": { "type": "string", "maxLength": 50 },
+        "followersCount": { "type": "number" },
+        "followingCount": { "type": "number" },
+        "postsCount": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "isEmailVerified": { "type": "boolean" },
+        "accountType": { "type": "string", "enum": ["personal", "business"] },
+        "role": { "type": "string", "enum": ["user", "business", "admin", "super_admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "email": { "type": "string", "maxLength": 150 }
+      },
+      "required": ["id", "username", "fullName"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Photo Bucket Nepal photo publication.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 60 },
+        "userAvatar": { "type": "string", "maxLength": 2048 },
+        "imageUrl": { "type": "string", "maxLength": 2048 },
+        "caption": { "type": "string", "maxLength": 2000 },
+        "location": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "maxLength": 50 },
+        "likes": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "imageUrl", "caption"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comments on posts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "postId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 60 },
+        "userAvatar": { "type": "string", "maxLength": 2048 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "postId", "userId", "text"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "Post like by user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "postId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "postId"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "24-hour visual story.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 60 },
+        "userAvatar": { "type": "string", "maxLength": 2048 },
+        "imageUrl": { "type": "string", "maxLength": 2048 },
+        "caption": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "imageUrl"]
+    },
+    "ScrollingAd": {
+      "title": "ScrollingAd",
+      "description": "Continuously scrolling announcements and sponsored ads displayed at top of footer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "nepaliTitle": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "nepaliDescription": { "type": "string", "maxLength": 1000 },
+        "category": { "type": "string", "enum": ["notice", "sponsored", "tourism", "contest", "advisory", "offer"] },
+        "badgeText": { "type": "string", "maxLength": 50 },
+        "sponsorName": { "type": "string", "maxLength": 100 },
+        "linkUrl": { "type": "string", "maxLength": 2048 },
+        "actionText": { "type": "string", "maxLength": 50 },
+        "imageUrl": { "type": "string", "maxLength": 2048 },
+        "isActive": { "type": "boolean" },
+        "priority": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "description", "category", "isActive"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of user photo posts."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Subcollection of comments under each post."
+    },
+    "/posts/{postId}/likes/{userId}": {
+      "schema": "Like",
+      "description": "Subcollection of likes per post indexed by userId."
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Collection of 24-hour temporary stories."
+    },
+    "/scrolling_ads/{adId}": {
+      "schema": "ScrollingAd",
+      "description": "Collection of scrolling announcement ads managed by SuperAdmin."
+    }
+  }
+}

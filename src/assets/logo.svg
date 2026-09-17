@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="pbl_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+    <linearGradient id="pbl_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#003893" />
+      <stop offset="100%" stop-color="#DC143C" />
+    </linearGradient>
+    <linearGradient id="pbl_crimson" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2E55" />
+      <stop offset="100%" stop-color="#DC143C" />
+    </linearGradient>
+    <filter id="pbl_shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#003893" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <circle cx="60" cy="60" r="57" fill="url(#pbl_bg)" stroke="url(#pbl_rim)" stroke-width="3" />
+  <circle cx="60" cy="60" r="53" fill="none" stroke="#003893" stroke-width="0.75" stroke-dasharray="3 3" opacity="0.4" />
+
+  <g transform="translate(14, 14) scale(1.916)" filter="url(#pbl_shadow)">
+    <path
+      d="M8 12C8 9.79086 9.79086 8 12 8H36C38.2091 8 40 9.79086 40 12V34C40 38.4183 36.4183 42 32 42H16C11.5817 42 8 38.4183 8 34V12Z"
+      fill="#003893"
+      fill-opacity="0.08"
+      stroke="#003893"
+      stroke-width="2.5"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M13 14L34 20L20 25L13 25V14Z"
+      fill="url(#pbl_crimson)"
+    />
+    <path
+      d="M13 25L32 31L18 36L13 36V25Z"
+      fill="url(#pbl_crimson)"
+    />
+    <circle cx="27" cy="25" r="4.5" fill="#FFFFFF" stroke="#003893" stroke-width="1.5" />
+    <circle cx="27" cy="25" r="2" fill="#DC143C" />
+    <path
+      d="M18 8C18 5.5 20.5 4 24 4C27.5 4 30 5.5 30 8"
+      stroke="#003893"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>

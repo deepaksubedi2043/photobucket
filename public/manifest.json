@@ -1,0 +1,59 @@
+{
+  "id": "/",
+  "name": "Photo Bucket Nepal - फोटो Bucket",
+  "short_name": "फोटो Bucket",
+  "description": "Visual home for Nepali creators and communities. Real-time image sharing, location tagging, and cultural feeds across Nepal.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#003893",
+  "background_color": "#FFFFFF",
+  "categories": ["social", "photo", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192 512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "short_name": "Feed",
+      "url": "/?feed=for-you",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "New Post",
+      "short_name": "Post",
+      "url": "/?action=create",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Kathmandu Feed",
+      "short_name": "KTM",
+      "url": "/?district=Kathmandu",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    }
+  ]
+}

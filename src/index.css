@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #020617;
+  color: #f8fafc;
+}
+
+@keyframes ticker-slow {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.scrolling-ads-track {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: max-content;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-slow 40s linear infinite;
+}
+
+.scrolling-ads-track.is-paused {
+  animation-play-state: paused !important;
+}
+

@@ -1,0 +1,138 @@
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
+
+// Master 512x512 App Icon SVG that perfectly matches the Website Logo in Logo.tsx
+const appIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background subtle gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F8FAFC" />
+    </linearGradient>
+
+    <!-- Nepal Flag Crimson Red gradient -->
+    <linearGradient id="crimsonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2E55" />
+      <stop offset="100%" stop-color="#DC143C" />
+    </linearGradient>
+
+    <!-- Nepal Royal Blue gradient -->
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B429C" />
+      <stop offset="100%" stop-color="#003893" />
+    </linearGradient>
+
+    <!-- Soft drop shadow for emblem -->
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#003893" flood-opacity="0.18" />
+    </filter>
+
+    <!-- Inner bezel border gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#003893" />
+      <stop offset="50%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#DC143C" />
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Base: High-DPI Squircle with subtle border (Matches iOS & Android Maskable safe zone) -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="6" />
+
+  <!-- Subtle inner ambient rim -->
+  <rect x="24" y="24" width="464" height="464" rx="100" fill="none" stroke="#E2E8F0" stroke-width="2" />
+
+  <!-- Scaled Emblem from Logo.tsx (Centered within 512x512) -->
+  <!-- Original viewBox was 48x48. Translating and scaling to 320x320 centered -->
+  <g transform="translate(86, 68) scale(7.08)" filter="url(#shadow)">
+    <!-- Base Bucket / Frame Outline in Royal Blue (#003893) -->
+    <path
+      d="M8 12C8 9.79086 9.79086 8 12 8H36C38.2091 8 40 9.79086 40 12V34C40 38.4183 36.4183 42 32 42H16C11.5817 42 8 38.4183 8 34V12Z"
+      fill="#003893"
+      fill-opacity="0.08"
+      stroke="#003893"
+      stroke-width="2.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Upper Nepali Crimson Pennant / Mountain Peak (#DC143C) -->
+    <path
+      d="M13 14L34 20L20 25L13 25V14Z"
+      fill="url(#crimsonGrad)"
+    />
+
+    <!-- Lower Nepali Crimson Pennant with Sun/Moon Aperture (#DC143C) -->
+    <path
+      d="M13 25L32 31L18 36L13 36V25Z"
+      fill="url(#crimsonGrad)"
+    />
+
+    <!-- Central Camera Lens / White Sun Emblem -->
+    <circle cx="27" cy="25" r="4.5" fill="#FFFFFF" stroke="#003893" stroke-width="1.5" />
+    <circle cx="27" cy="25" r="2" fill="#DC143C" />
+
+    <!-- Minimalist Top Handle -->
+    <path
+      d="M18 8C18 5.5 20.5 4 24 4C27.5 4 30 5.5 30 8"
+      stroke="#003893"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <!-- Typography matching Website Logo: 'फोटो Bucket' -->
+  <g transform="translate(256, 424)" text-anchor="middle">
+    <!-- 'फोटो' in Crimson Red + 'Bucket' in Royal Blue -->
+    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Mukta', 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="44" letter-spacing="-0.5">
+      <tspan fill="#DC143C">फोटो </tspan>
+      <tspan fill="#003893" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', sans-serif" font-weight="900">Bucket</tspan>
+    </text>
+    <text y="28" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'Mukta', sans-serif" font-weight="600" font-size="18" letter-spacing="1.5">नेपाल • NEPAL</text>
+  </g>
+</svg>`;
+
+async function generate() {
+  const publicDir = path.resolve("public");
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+
+  // 1. Write the master logo.svg
+  fs.writeFileSync(path.join(publicDir, "logo.svg"), appIconSvg, "utf8");
+  console.log("Written public/logo.svg");
+
+  // 2. Generate icon-512.png
+  await sharp(Buffer.from(appIconSvg))
+    .resize(512, 512)
+    .png({ quality: 100, compressionLevel: 9 })
+    .toFile(path.join(publicDir, "icon-512.png"));
+  console.log("Generated public/icon-512.png");
+
+  // 3. Generate icon-192.png
+  await sharp(Buffer.from(appIconSvg))
+    .resize(192, 192)
+    .png({ quality: 100, compressionLevel: 9 })
+    .toFile(path.join(publicDir, "icon-192.png"));
+  console.log("Generated public/icon-192.png");
+
+  // 4. Generate apple-touch-icon.png (180x180)
+  await sharp(Buffer.from(appIconSvg))
+    .resize(180, 180)
+    .png({ quality: 100, compressionLevel: 9 })
+    .toFile(path.join(publicDir, "apple-touch-icon.png"));
+  console.log("Generated public/apple-touch-icon.png");
+
+  // 5. Generate favicon.png (64x64)
+  await sharp(Buffer.from(appIconSvg))
+    .resize(64, 64)
+    .png({ quality: 100, compressionLevel: 9 })
+    .toFile(path.join(publicDir, "favicon.png"));
+  console.log("Generated public/favicon.png");
+
+  console.log("All app icons successfully generated!");
+}
+
+generate().catch((err) => {
+  console.error("Error generating icons:", err);
+  process.exit(1);
+});
