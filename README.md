@@ -6,6 +6,7 @@ colorTo: blue
 sdk: docker
 app_port: 7860
 pinned: false
+suggested_hardware: cpu-basic
 ---
 
 # 🇳🇵 फोटो Bucket (Photo Bucket Nepal)
@@ -18,13 +19,13 @@ This repository includes pre-configured **GitHub Actions CI/CD workflows** that 
 
 1. **Hugging Face Spaces (`.github/workflows/deploy-huggingface.yml`)**:
    - Automatically synchronizes commits with your Hugging Face Space.
-   - Builds and launches via `Dockerfile` on Hugging Face Spaces.
+   - Builds and launches via `Dockerfile` on Hugging Face Spaces free tier (`cpu-basic`).
 
 2. **cPanel Hosting (`.github/workflows/deploy-cpanel.yml`)**:
    - Automatically compiles the production bundle (`npm run build`) upon every commit.
    - Synchronizes `dist/` directly to your cPanel hosting directory (`public_html/`) via FTPS/FTP.
 
-For step-by-step secret configuration, see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).
+For step-by-step secret configuration and Free Tier troubleshooting, see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).
 
 ## 🛠️ Local Development
 
