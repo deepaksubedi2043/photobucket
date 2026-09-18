@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>फोटो Bucket (Photo Bucket Nepal) — Connecting Every Corner of Nepal</title>
+  <meta name="description" content="Authentic social photo sharing and cultural showcase platform celebrating Nepal's 77 districts, Himalayan heritage, and verified Nepali creators." />
+  
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/svg+xml" href="https://deepaksubedi2043.github.io/photobucket/logo.svg" />
+  <link rel="apple-touch-icon" href="https://deepaksubedi2043.github.io/photobucket/apple-touch-icon.png" />
+  
+  <!-- OpenGraph / Social Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://photobucketnepal.com" />
+  <meta property="og:title" content="फोटो Bucket (Photo Bucket Nepal)" />
+  <meta property="og:description" content="Connecting Every Corner of Nepal. Explore authentic photography, cultural stories, and local communities." />
+  <meta property="og:image" content="https://deepaksubedi2043.github.io/photobucket/icon-512.png" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #app-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .loading-fallback {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #0f172a;
+      color: #ffffff;
+      z-index: -1;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #f43f5e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-fallback">
+    <div class="spinner"></div>
+    <div style="font-weight: 600; font-size: 16px; letter-spacing: 0.5px;">फोटो Bucket लोड हुँदैछ...</div>
+  </div>
+
+  <iframe 
+    id="app-frame" 
+    src="https://deepaksubedi2043.github.io/photobucket/" 
+    allow="camera; microphone; geolocation; clipboard-write; encrypted-media" 
+    title="Photo Bucket Nepal"
+  ></iframe>
+</body>
+</html>
