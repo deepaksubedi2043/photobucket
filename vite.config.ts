@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
   return {
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

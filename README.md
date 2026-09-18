@@ -13,15 +13,19 @@ suggested_hardware: cpu-basic
 
 Photo Bucket Nepal is an authentic, community-driven social photography and cultural showcase platform celebrating Nepal's 77 districts, Himalayan heritage, food culture, local stories, and verified Nepali businesses.
 
-## 🚀 Continuous Deployment & Automation
+## 🚀 Continuous Deployment & Live URLs
 
 This repository includes pre-configured **GitHub Actions CI/CD workflows** that automatically build and deploy whenever you commit and push to your `main` branch on GitHub:
 
-1. **Hugging Face Spaces (`.github/workflows/deploy-huggingface.yml`)**:
+1. **GitHub Pages (`.github/workflows/deploy-github-pages.yml`) - 100% Free Public Live URL**:
+   - Deploys directly to your public GitHub URL (`https://<your-username>.github.io/<repo-name>/`).
+   - Runs automatically on GitHub's global CDN with zero server costs or quota limits.
+
+2. **Hugging Face Spaces (`.github/workflows/deploy-huggingface.yml`)**:
    - Automatically synchronizes commits with your Hugging Face Space.
    - Builds and launches via `Dockerfile` on Hugging Face Spaces free tier (`cpu-basic`).
 
-2. **cPanel Hosting (`.github/workflows/deploy-cpanel.yml`)**:
+3. **cPanel Hosting (`.github/workflows/deploy-cpanel.yml`)**:
    - Automatically compiles the production bundle (`npm run build`) upon every commit.
    - Synchronizes `dist/` directly to your cPanel hosting directory (`public_html/`) via FTPS/FTP.
 
