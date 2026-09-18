@@ -3,6 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { initSecurityGuard } from './utils/securityGuard';
+import { runClientDatabaseMigration } from './services/dbMigrationService';
+
+// Run automated client schema migration on boot (preserving user data, theme, and auth)
+runClientDatabaseMigration();
 
 // Initialize Client Security Shield (Anti-Inspection, Anti-Scraping, Hotkey Interceptor)
 initSecurityGuard({

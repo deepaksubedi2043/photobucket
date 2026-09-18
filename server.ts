@@ -5,6 +5,8 @@ import fs from "fs";
 import { WebSocketServer, WebSocket } from "ws";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { initializePersistentDatabase, saveDatabaseState, CURRENT_DATABASE_SCHEMA_VERSION, DatabaseState } from "./src/services/dbStore";
+import { authenticateJWT, requireAdmin, JWT_SECRET, hashPassword, comparePassword, generateToken } from "./src/services/authMiddleware";
 
 const app = express();
 const server = http.createServer(app);
@@ -365,7 +367,7 @@ const SUPER_ADMIN_USER: User = {
   mobileNumber: "9841000000",
 };
 
-const users: User[] = [
+const seedUsers: User[] = [
   {
     id: "user_deepak",
     username: "deepak_subedi",
@@ -727,7 +729,7 @@ const userCredentials: Record<string, string> = {
 };
 
 // Seed Blue Tick Verification Requests for Super Admin Desk
-const verificationRequests: VerificationRequest[] = [
+const seedVerificationRequests: VerificationRequest[] = [
   {
     id: "vreq_1",
     userId: "user_aarav",
@@ -822,7 +824,7 @@ const verificationRequests: VerificationRequest[] = [
 ];
 
 // Live System Audit Logs for Super Admin Oversight
-const auditLogs: AuditLog[] = [
+const seedAuditLogs: AuditLog[] = [
   {
     id: "log_1",
     timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
@@ -888,7 +890,7 @@ function addAuditLog(
 }
 
 // Delegated Sub-Admin Accounts Data Store
-const delegatedAdmins: DelegatedAdminUser[] = [
+const seedDelegatedAdmins: DelegatedAdminUser[] = [
   {
     id: "admin_pooja",
     fullName: "Pooja Sharma",
@@ -948,7 +950,7 @@ const delegatedAdmins: DelegatedAdminUser[] = [
 ];
 
 // Admin Task Tracking Audit Log Store
-const adminTaskLogs: AdminTaskLog[] = [
+const seedAdminTaskLogs: AdminTaskLog[] = [
   {
     id: "task_seed_1",
     timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
@@ -1125,7 +1127,7 @@ function logAdminTask(data: {
 }
 
 // Seed Posts with authentic Nepal imagery & dual captions
-const posts: Post[] = [
+const seedPosts: Post[] = [
   {
     id: "post_superadmin_official_notice",
     userId: "super_admin_deepak",
@@ -1325,7 +1327,7 @@ const posts: Post[] = [
 ];
 
 // Seed Stories (झलक)
-const stories: Story[] = [
+const seedStories: Story[] = [
   {
     id: "story_1",
     userId: "user_deepak",
@@ -1377,7 +1379,7 @@ const stories: Story[] = [
 ];
 
 // Seed Communities (चौतारी)
-const communities: Community[] = [
+const seedCommunities: Community[] = [
   {
     id: "comm_1",
     name: "Nepal Mountain & Trek Photographers",
@@ -1718,7 +1720,7 @@ function generateUniqueSuggestions(baseName: string, existingNames: string[], us
 }
 
 // Seed Direct Messages
-const directMessages: DirectMessage[] = [
+const seedDirectMessages: DirectMessage[] = [
   {
     id: "msg_1",
     senderId: "user_dikshya",
@@ -1741,7 +1743,7 @@ const directMessages: DirectMessage[] = [
 const activeUsers = new Set<string>(["user_deepak", "user_dikshya", "user_suman", "user_aarav"]);
 
 // Bidirectional user follow graph: userId -> Array of userIds they follow
-const userFollowingMap: Record<string, string[]> = {
+const seedFollowingMap: Record<string, string[]> = {
   user_deepak: ["user_dikshya", "user_suman", "user_aarav", "user_kiran", "super_admin_deepak"],
   user_dikshya: ["user_deepak", "user_suman", "user_sixit", "super_admin_deepak"],
   user_suman: ["user_deepak", "user_dikshya", "user_aarav", "super_admin_deepak"],
@@ -1751,6 +1753,48 @@ const userFollowingMap: Record<string, string[]> = {
   user_anmol: ["user_deepak", "super_admin_deepak"],
   user_prerana: ["user_deepak", "super_admin_deepak"],
 };
+
+// =========================================================================
+// PERSISTENT DATABASE ENGINE & INCREMENTAL SCHEMA MIGRATION INITIALIZATION
+// =========================================================================
+// Loads existing data across server restarts & git commits without overwriting.
+// Migrates missing schema fields dynamically to the newest version.
+const dbState: DatabaseState = initializePersistentDatabase({
+  schemaVersion: CURRENT_DATABASE_SCHEMA_VERSION,
+  lastUpdated: new Date().toISOString(),
+  users: seedUsers,
+  posts: seedPosts,
+  stories: seedStories,
+  communities: seedCommunities,
+  verificationRequests: seedVerificationRequests,
+  auditLogs: seedAuditLogs,
+  adminTaskLogs: seedAdminTaskLogs,
+  delegatedAdmins: seedDelegatedAdmins,
+  messages: seedDirectMessages,
+  followingMap: seedFollowingMap,
+  companyAds: [],
+  scrollingAds: [],
+});
+
+export const users: User[] = dbState.users;
+export const posts: Post[] = dbState.posts;
+export const stories: Story[] = dbState.stories;
+export const communities: Community[] = dbState.communities;
+export const verificationRequests: VerificationRequest[] = dbState.verificationRequests;
+export const auditLogs: AuditLog[] = dbState.auditLogs;
+export const adminTaskLogs: AdminTaskLog[] = dbState.adminTaskLogs;
+export const delegatedAdmins: DelegatedAdminUser[] = dbState.delegatedAdmins;
+export const directMessages: DirectMessage[] = dbState.messages;
+export const userFollowingMap: Record<string, string[]> = dbState.followingMap;
+
+export function persistDb(): void {
+  saveDatabaseState(dbState);
+}
+
+// Auto periodic sync to disk every 3 seconds to guarantee data integrity across commits & deployments
+setInterval(() => {
+  persistDb();
+}, 3000);
 
 // Auto-follow rule: Ensure all registered users (personal & business) auto-follow Super Admin
 function syncSuperAdminAutoFollowers() {
