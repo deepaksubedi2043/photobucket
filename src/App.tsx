@@ -25,6 +25,9 @@ import { FollowersOnlineWidget } from "./components/FollowersOnlineWidget";
 import { WebToAppSidebarCard } from "./components/WebToAppSidebarCard";
 import { testFirestoreConnection } from "./lib/firebase";
 import { firestoreSync } from "./services/firestoreSync";
+import { liveUpdateSync } from "./services/liveUpdateSync";
+import { scrollingAdsService } from "./services/scrollingAdsService";
+
 import {
   Sparkles,
   MapPin,
@@ -364,7 +367,33 @@ export default function App() {
     };
   }, [currentUser]);
 
-  // Fetch initial bootstrap data
+  // Background Synchronizer for live updates across Web, iOS, Android, and Windows
+  const refreshAppData = async (silent = true) => {
+    try {
+      const data = await api.getBootstrap();
+      setUsers(data.users);
+      setPosts(data.posts);
+      setStories(data.stories);
+      setCommunities(data.communities);
+      setLocations(data.locations);
+      setActiveUserIds(data.activeUsers || []);
+      setFollowingMap(data.followingMap || {});
+      scrollingAdsService.syncFromFirestore().catch(() => {});
+      if (!silent) {
+        addNotification({
+          id: `live_sync_${Date.now()}`,
+          type: "sync",
+          title: "⚡ लाइभ अपडेट सिङ्क भयो!",
+          subtitle: "Latest photos, stories and updates from the website are synchronized across Web, iOS, Android, and Windows.",
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.warn("Live background refresh error:", err);
+    }
+  };
+
+  // Fetch initial bootstrap data & activate Live Sync Engine
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -388,7 +417,13 @@ export default function App() {
     realtime.connect();
     testFirestoreConnection().catch(console.error);
 
+    // Initialize cross-platform live update synchronizer (Web, iOS, Android, Windows)
+    liveUpdateSync.init(() => {
+      refreshAppData(false);
+    });
+
     // Check for email verification callback in URL (?verified=true or ?token=...)
+
     try {
       const searchParams = new URLSearchParams(window.location.search);
       const isVerified = searchParams.get("verified");
@@ -675,6 +710,11 @@ export default function App() {
       });
     });
 
+    // 14. Real-time Live Mutation (Live website update push to all connected Web, iOS, Android, Windows clients)
+    const unsubLiveMutation = realtime.subscribe("system:live_mutation", (payload: any) => {
+      refreshAppData(true);
+    });
+
     return () => {
       unsubStatus();
       unsubPost();
@@ -689,7 +729,9 @@ export default function App() {
       unsubViolationAlert();
       unsubPresence();
       unsubFollow();
+      unsubLiveMutation();
     };
+
   }, [currentUser?.id, currentUser?.isSuperAdmin, currentUser?.email, users]);
 
   const addNotification = (notif: LiveNotification) => {

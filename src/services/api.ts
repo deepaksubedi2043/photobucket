@@ -1019,4 +1019,38 @@ export const api = {
     if (!res.ok) throw new Error(json.message || "Failed to record admin task");
     return json;
   },
+
+  async getSystemVersion(): Promise<{
+    success: boolean;
+    appName: string;
+    nepaliName: string;
+    version: string;
+    buildId: string;
+    bootTime: number;
+    lastMutationTime: number;
+    timestamp: string;
+  }> {
+    const res = await fetch("/api/system/version", {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to retrieve system version");
+    return json;
+  },
+
+  async triggerLiveSync(data?: { reason?: string; scope?: string }): Promise<{
+    success: boolean;
+    message: string;
+    lastMutationTime: number;
+  }> {
+    const res = await fetch("/api/system/trigger-live-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data || {}),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to trigger live sync");
+    return json;
+  },
 };
+

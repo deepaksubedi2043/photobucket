@@ -187,11 +187,20 @@ export const WebToAppSidebarCard: React.FC<WebToAppSidebarCardProps> = ({
         </span>
       </div>
 
-      <p className="text-[11px] text-blue-100 mb-3.5 leading-relaxed">
+      <p className="text-[11px] text-blue-100 mb-2 leading-relaxed">
         {language === "ne"
-          ? "एक क्लिकमा मोबाइलको होमस्क्रिनमा इन्स्टल गर्नुहोस्। छिटो खुल्ने र डाटा बचत हुने एप!"
-          : "Save Photo Bucket directly to your mobile or desktop homescreen for 1-click launch & full screen."}
+          ? "एक क्लिकमा मोबाइल वा कम्प्युटरको होमस्क्रिनमा इन्स्टल गर्नुहोस्। वेबसाइटका सबै अपडेटहरू एपमा स्वतः रियल-टाइममा सिङ्क हुन्छन्!"
+          : "Save Photo Bucket to your mobile or desktop homescreen. All website updates sync automatically to the app in real time!"}
       </p>
+
+      {/* Live sync badge */}
+      <div className="flex items-center gap-1 text-[10px] text-emerald-200 bg-black/25 px-2 py-1 rounded-lg mb-3">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="font-semibold">
+          {language === "ne" ? "⚡ वेबसाइटबाट iOS/Android/Windows मा स्वतः लाइभ अपडेट" : "⚡ Instant Live Sync: Web ↔ iOS, Android & Windows"}
+        </span>
+      </div>
+
 
       {/* Quick OS Tabs */}
       <div className="flex gap-1.5 p-1 bg-black/20 rounded-xl mb-3 text-[10px] font-bold">

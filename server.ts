@@ -1825,6 +1825,22 @@ syncSuperAdminAutoFollowers();
 // WebSocket Broadcast System
 const wss = new WebSocketServer({ server, path: "/ws" });
 
+const SERVER_BOOT_TIME = Date.now();
+const SERVER_BUILD_VERSION = "2.5.0";
+const SERVER_BUILD_ID = `pb_live_${SERVER_BOOT_TIME}`;
+let lastDataMutationTime = Date.now();
+
+function touchDataMutation(reason = "live_data_mutation") {
+  lastDataMutationTime = Date.now();
+  broadcast("system:live_mutation", {
+    buildId: SERVER_BUILD_ID,
+    version: SERVER_BUILD_VERSION,
+    lastMutationTime: lastDataMutationTime,
+    reason,
+    timestamp: new Date().toISOString(),
+  });
+}
+
 function broadcast(event: string, payload: any) {
   const message = JSON.stringify({ event, payload, timestamp: new Date().toISOString() });
   wss.clients.forEach((client) => {
@@ -1833,6 +1849,7 @@ function broadcast(event: string, payload: any) {
     }
   });
 }
+
 
 wss.on("connection", (ws) => {
   // Send initial presence & welcome
@@ -4479,7 +4496,8 @@ app.get("/api/download/app-info", (req, res) => {
     androidDownloadUrl: "/api/download/android-apk",
     iosProfileDownloadUrl: "/api/download/ios-mobileconfig",
     features: [
-      "Real-time WebSocket Live Syncing",
+      "Real-time WebSocket Live Syncing across Web, iOS, Android & Windows",
+      "Instant Cloud Auto-Update without App Store rebuilds",
       "Offline Storage with Service Worker",
       "Camera & Gallery High-Res Upload",
       "Nepal Location Pinning & Chautari Discussions",
@@ -4488,6 +4506,36 @@ app.get("/api/download/app-info", (req, res) => {
     ],
   });
 });
+
+// System Live Version & Update Poller (Ensures all downloaded web-to-app versions stay 100% in sync)
+app.get("/api/system/version", (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.json({
+    success: true,
+    appName: "Photo Bucket",
+    nepaliName: "फोटो Bucket",
+    version: SERVER_BUILD_VERSION,
+    buildId: SERVER_BUILD_ID,
+    bootTime: SERVER_BOOT_TIME,
+    lastMutationTime: lastDataMutationTime,
+    activeConnections: wss.clients.size,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Trigger Cross-Platform Live Sync for Web, iOS, Android, and Windows
+app.post("/api/system/trigger-live-sync", (req, res) => {
+  const { reason, scope } = req.body || {};
+  touchDataMutation(reason || "manual_sync_triggered");
+  res.json({
+    success: true,
+    message: "Live sync broadcast dispatched to Web, iOS, Android & Windows clients.",
+    lastMutationTime: lastDataMutationTime,
+    version: SERVER_BUILD_VERSION,
+    buildId: SERVER_BUILD_ID,
+  });
+});
+
 
 // Super Admin Reset User Password
 app.post("/api/admin/users/:id/reset-password", (req, res) => {
