@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-export const CURRENT_DATABASE_SCHEMA_VERSION = 4;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 5;
 
 export interface DatabaseState {
   schemaVersion: number;
@@ -64,20 +64,27 @@ function applyIncrementalMigrations(existingState: Partial<DatabaseState>, defau
     }
   });
 
-  const migratedUsers = Array.from(existingUserMap.values()).map((user) => ({
-    accountType: user.accountType || "personal",
-    role: user.role || "user",
-    status: user.status || "active",
-    isApproved: user.isApproved !== undefined ? user.isApproved : true,
-    approvalStatus: user.approvalStatus || "approved",
-    isVerified: !!user.isVerified,
-    isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : true,
-    followersCount: typeof user.followersCount === "number" ? user.followersCount : 0,
-    followingCount: typeof user.followingCount === "number" ? user.followingCount : 0,
-    postsCount: typeof user.postsCount === "number" ? user.postsCount : 0,
-    district: user.district || "Kathmandu",
-    ...user,
-  }));
+  const migratedUsers = Array.from(existingUserMap.values()).map((user) => {
+    const isStrictSuperAdmin =
+      user.id === "super_admin_deepak" ||
+      user.email?.toLowerCase() === "photobucketnepal@gmail.com";
+
+    return {
+      ...user,
+      accountType: user.accountType || "personal",
+      status: user.status || "active",
+      isApproved: user.isApproved !== undefined ? user.isApproved : true,
+      approvalStatus: user.approvalStatus || "approved",
+      isVerified: isStrictSuperAdmin ? true : !!user.isVerified,
+      isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : true,
+      followersCount: typeof user.followersCount === "number" ? user.followersCount : 0,
+      followingCount: typeof user.followingCount === "number" ? user.followingCount : 0,
+      postsCount: typeof user.postsCount === "number" ? user.postsCount : 0,
+      district: user.district || "Kathmandu",
+      isSuperAdmin: isStrictSuperAdmin,
+      role: isStrictSuperAdmin ? "super_admin" : user.role === "super_admin" ? "user" : user.role || "user",
+    };
+  });
 
   // 2. Preserve and enhance existing posts
   const existingPosts = Array.isArray(existingState.posts) ? existingState.posts : [];

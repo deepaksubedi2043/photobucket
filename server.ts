@@ -720,7 +720,7 @@ const seedUsers: User[] = [
 
 // In-Memory Password Store
 const userCredentials: Record<string, string> = {
-  "super_admin_deepak": "Dmgs@12345",
+  "super_admin_deepak": "Dmgs@12345@#",
   "admin_pooja": "Pooja@Pb2026",
   "admin_bibek": "Bibek@Pb2026",
   "user_deepak": "nepal123",
@@ -2279,12 +2279,8 @@ app.post("/api/auth/google", (req, res) => {
 
   const cleanEmail = (email || "").trim().toLowerCase();
 
-  // Root Super Admin direct Google check
-  if (
-    cleanEmail === "photobucketnepal@gmail.com" ||
-    cleanEmail === "medeepaksubedi@gmail.com" ||
-    cleanEmail === "deepaksubedi32@gmail.com"
-  ) {
+  // Root Super Admin direct Google check - ONLY photobucketnepal@gmail.com
+  if (cleanEmail === "photobucketnepal@gmail.com") {
     activeUsers.add(SUPER_ADMIN_USER.id);
     return res.json({
       success: true,
@@ -2728,18 +2724,15 @@ app.post("/api/auth/login", (req, res) => {
   const cleanIdent = identifier.trim().toLowerCase();
   const phoneIdent = identifier.trim().replace(/\s+/g, "").replace(/^\+977/, "");
 
-  // 1. Direct Super Admin Root Check - photobucketnepal@gmail.com, photo_bucket, medeepaksubedi@gmail.com, or deepak_superadmin with Dmgs@12345
+  // 1. Direct Super Admin Root Check - STRICTLY photobucketnepal@gmail.com, photo_bucket, or super_admin_deepak with Dmgs@12345@#
   if (
     (cleanIdent === "photobucketnepal@gmail.com" ||
-      cleanIdent === "medeepaksubedi@gmail.com" ||
-      cleanIdent === "deepaksubedi32@gmail.com" ||
       cleanIdent === "super_admin_deepak" ||
-      cleanIdent === "photo_bucket" ||
-      cleanIdent === "deepak_superadmin") &&
-    password === "Dmgs@12345"
+      cleanIdent === "photo_bucket") &&
+    password === "Dmgs@12345@#"
   ) {
     activeUsers.add(SUPER_ADMIN_USER.id);
-    addAuditLog("SUPER_ADMIN_LOGIN", "AUTH", SUPER_ADMIN_USER.fullName, "Super Admin logged in with root credentials (Full Control Granted).", "warning");
+    addAuditLog("SUPER_ADMIN_LOGIN", "AUTH", SUPER_ADMIN_USER.fullName, "Super Admin logged in with root credentials (photobucketnepal@gmail.com).", "warning");
 
     return res.json({
       success: true,
@@ -2954,8 +2947,7 @@ app.post("/api/auth/login", (req, res) => {
     user: matchedUser,
     isSuperAdmin:
       matchedUser.id === SUPER_ADMIN_USER.id ||
-      matchedUser.email === "photobucketnepal@gmail.com" ||
-      matchedUser.email === "medeepaksubedi@gmail.com",
+      matchedUser.email?.toLowerCase() === "photobucketnepal@gmail.com",
   });
 });
 

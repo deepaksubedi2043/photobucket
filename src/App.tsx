@@ -193,21 +193,21 @@ export default function App() {
       authenticatedUser.isSuperAdmin ||
       authenticatedUser.isDelegatedAdmin ||
       authenticatedUser.role === "admin" ||
-      authenticatedUser.email === "deepaksubedi32@gmail.com" ||
-      authenticatedUser.email === "medeepaksubedi@gmail.com"
+      authenticatedUser.role === "super_admin" ||
+      authenticatedUser.email?.toLowerCase() === "photobucketnepal@gmail.com"
     );
 
     addNotification({
       id: `notif_${Date.now()}`,
       type: "sync",
       title: isAnyAdmin
-        ? authenticatedUser.isSuperAdmin
+        ? (authenticatedUser.isSuperAdmin || authenticatedUser.email?.toLowerCase() === "photobucketnepal@gmail.com")
           ? `Super Admin Command Activated 🛡️`
           : `Admin Staff Portal Activated 🛡️`
         : `Welcome, ${authenticatedUser.fullName}! 🇳🇵`,
       subtitle: isAnyAdmin
-        ? authenticatedUser.isSuperAdmin
-          ? `Logged in as Root Administrator (Deepak Subedi)`
+        ? (authenticatedUser.isSuperAdmin || authenticatedUser.email?.toLowerCase() === "photobucketnepal@gmail.com")
+          ? `Logged in as Root Super Admin (फोटो Bucket)`
           : `Logged in as ${authenticatedUser.fullName} (${authenticatedUser.designation || "Administrative Staff"})`
         : authenticatedUser.accountType === "business"
         ? `Logged into ${authenticatedUser.businessName || "Business Organization"} account`
@@ -345,8 +345,8 @@ export default function App() {
           currentUser?.isSuperAdmin ||
           currentUser?.isDelegatedAdmin ||
           currentUser?.role === "admin" ||
-          currentUser?.email === "deepaksubedi32@gmail.com" ||
-          currentUser?.email === "medeepaksubedi@gmail.com"
+          currentUser?.role === "super_admin" ||
+          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com"
         );
 
         if (isAlreadyAdmin) {
@@ -1769,8 +1769,8 @@ export default function App() {
         (currentUser?.isSuperAdmin ||
           currentUser?.isDelegatedAdmin ||
           currentUser?.role === "admin" ||
-          currentUser?.email === "deepaksubedi32@gmail.com" ||
-          currentUser?.email === "medeepaksubedi@gmail.com") && (
+          currentUser?.role === "super_admin" ||
+          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com") && (
         <SuperAdminPortal
           currentUser={currentUser}
           initialTab={superAdminInitialTab}

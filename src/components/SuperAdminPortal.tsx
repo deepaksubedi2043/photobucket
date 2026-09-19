@@ -61,7 +61,10 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
   onSwitchToUserView,
   initialTab,
 }) => {
-  const isRootSuperAdmin = currentUser.isSuperAdmin === true || currentUser.email === "deepaksubedi32@gmail.com";
+  const isRootSuperAdmin =
+    currentUser.isSuperAdmin === true ||
+    currentUser.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+    currentUser.id === "super_admin_deepak";
   const permissions = currentUser.adminPermissions;
 
   // Determine initial tab based on permissions

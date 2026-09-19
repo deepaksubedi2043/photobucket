@@ -36,11 +36,11 @@ export const AppFooter: React.FC<AppFooterProps> = ({
   const [gifRefreshKey, setGifRefreshKey] = useState(0);
 
   const isSuperAdmin =
-    currentUser?.email === "deepaksubedi32@gmail.com" ||
-    currentUser?.email === "medeepaksubedi@gmail.com" ||
+    currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
     currentUser?.isSuperAdmin ||
     currentUser?.isDelegatedAdmin ||
-    currentUser?.role === "admin";
+    currentUser?.role === "admin" ||
+    currentUser?.role === "super_admin";
 
   const handleOpenGifModal = (slot: 1 | 2 | 3) => {
     setActiveGifSlot(slot);

@@ -95,8 +95,8 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
 
   const handleFillSuperAdminDemo = () => {
     setRoleType("super_admin");
-    setIdentifier("deepaksubedi32@gmail.com");
-    setPassword("Dmgs@12345");
+    setIdentifier("Photobucketnepal@gmail.com");
+    setPassword("Dmgs@12345@#");
     setError(null);
   };
 
@@ -267,7 +267,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                 }}
                 placeholder={
                   roleType === "super_admin"
-                    ? "deepaksubedi32@gmail.com or super_admin_deepak"
+                    ? "Photobucketnepal@gmail.com or photo_bucket"
                     : "e.g. pooja.sharma@photobucket.com.np or pooja_verification_lead"
                 }
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 font-mono transition"
@@ -323,10 +323,10 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                   onClick={handleFillSuperAdminDemo}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
                 >
-                  Fill Super Admin (Deepak Subedi)
+                  Fill Super Admin (Photobucketnepal)
                 </button>
                 <span className="text-[10px] text-slate-500 font-mono">
-                  (deepaksubedi32@gmail.com / Dmgs@12345)
+                  (Photobucketnepal@gmail.com / Dmgs@12345@#)
                 </span>
               </div>
             ) : (

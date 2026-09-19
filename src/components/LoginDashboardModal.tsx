@@ -470,10 +470,10 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
         res.user?.isSuperAdmin ||
         res.user?.isDelegatedAdmin ||
         res.user?.role === "admin" ||
-        res.user?.email === "deepaksubedi32@gmail.com" ||
-        res.user?.email === "medeepaksubedi@gmail.com"
+        res.user?.role === "super_admin" ||
+        res.user?.email?.toLowerCase() === "photobucketnepal@gmail.com"
       ) {
-        setError("Not access");
+        setError(language === "ne" ? "प्रशासकीय खाताहरूले समर्पित प्रशासनिक गेटवेबाट मात्र लगइन गर्नुपर्छ।" : "Administrative accounts must log in via the Administrative Access Gateway.");
         return;
       }
 
@@ -591,11 +591,8 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
       const googleUser = await signInWithGooglePopup();
       if (!googleUser) return;
 
-      if (
-        googleUser.email === "deepaksubedi32@gmail.com" ||
-        googleUser.email === "medeepaksubedi@gmail.com"
-      ) {
-        setError("Not access");
+      if (googleUser.email?.toLowerCase() === "photobucketnepal@gmail.com") {
+        setError(language === "ne" ? "प्रशासकीय खाताहरूले समर्पित प्रशासनिक गेटवेबाट मात्र लगइन गर्नुपर्छ।" : "Administrative accounts must log in via the Administrative Access Gateway.");
         return;
       }
 

@@ -1124,7 +1124,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             <div className="mt-1 flex items-center gap-2">
                               <span className="text-slate-500 font-medium">Official Registered Email ID:</span>
                               <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
-                                {user.email || "deepaksubedi32@gmail.com"}
+                                {user.email || "support@photobucket.com.np"}
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">
@@ -1165,8 +1165,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             </div>
                             <p className="text-[11px] text-slate-500 mt-0.5">
                               {language === "ne"
-                                ? `तलको बटन थिची तपाईंको आधिकारिक इमेल (${user.email || "deepaksubedi32@gmail.com"}) मा सुरक्षा कोड पठाउनुहोस्।`
-                                : `Click below to receive a 6-digit verification code on your official registered email (${user.email || "deepaksubedi32@gmail.com"}).`}
+                                ? `तलको बटन थिची तपाईंको आधिकारिक इमेल (${user.email || "support@photobucket.com.np"}) मा सुरक्षा कोड पठाउनुहोस्।`
+                                : `Click below to receive a 6-digit verification code on your official registered email (${user.email || "support@photobucket.com.np"}).`}
                             </p>
                           </div>
                         </div>
@@ -1185,8 +1185,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                               <Send className="w-3.5 h-3.5" />
                               <span>
                                 {language === "ne"
-                                  ? `आधिकारिक इमेल (${user.email || "deepaksubedi32@gmail.com"}) मा कोड पठाउनुहोस्`
-                                  : `Send Code to Official Registered Email (${user.email || "deepaksubedi32@gmail.com"})`}
+                                  ? `आधिकारिक इमेल (${user.email || "support@photobucket.com.np"}) मा कोड पठाउनुहोस्`
+                                  : `Send Code to Official Registered Email (${user.email || "support@photobucket.com.np"})`}
                               </span>
                             </>
                           )}
