@@ -52,6 +52,7 @@ interface UserProfileModalProps {
   allUsers?: User[];
   onSelectUser?: (user: User) => void;
   onOpenDirectMessage?: (user: User) => void;
+  onOpenSuperAdminPortal?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -68,6 +69,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   allUsers = [],
   onSelectUser,
   onOpenDirectMessage,
+  onOpenSuperAdminPortal,
 }) => {
   const [activeTab, setActiveTab] = useState<"posts" | "saved" | "business" | "verification" | "security" | "onlineFollowers">("posts");
   const sessionDuration = useSessionDuration(currentUser?.id, language);
@@ -824,6 +826,43 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
                     {/* Bio */}
                     <p className="text-xs text-slate-700 leading-relaxed mb-3">{user.bio}</p>
+
+                    {/* Super Admin / Administrative Officer Badge & Portal Access */}
+                    {(user.isSuperAdmin || user.isDelegatedAdmin || user.role === "super_admin" || user.role === "admin") && (
+                      <div className="p-3 rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 border border-rose-600/40 mb-3 flex items-center justify-between text-xs shadow-md">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                            <ShieldCheck className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                              <span>
+                                {user.isSuperAdmin || user.role === "super_admin"
+                                  ? (language === "ne" ? "👑 रूट सुपर एडमिन (Full Access)" : "👑 Root Super Admin (Full Control)")
+                                  : (language === "ne" ? "🛡️ प्रशासकीय स्टाफ (Admin Staff)" : "🛡️ Authorized Admin Staff")}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-rose-300 font-mono truncate">
+                              {user.officialEmail || user.email || "photobucketnepal@gmail.com"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {onOpenSuperAdminPortal && (isMe || currentUser.isSuperAdmin) && (
+                          <button
+                            id="profile-open-super-admin-portal-btn"
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onOpenSuperAdminPortal();
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1"
+                          >
+                            <span>Open Portal →</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* Blue Tick Verified Status Card */}
                     {user.isVerified && (

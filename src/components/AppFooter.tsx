@@ -21,6 +21,7 @@ interface AppFooterProps {
   isAppDownloaded?: boolean;
   onResetAppDownload?: () => void;
   currentUser?: User | null;
+  onOpenSuperAdminGateway?: () => void;
 }
 
 export const AppFooter: React.FC<AppFooterProps> = ({
@@ -30,6 +31,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
   isAppDownloaded = false,
   onResetAppDownload,
   currentUser,
+  onOpenSuperAdminGateway,
 }) => {
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [activeGifSlot, setActiveGifSlot] = useState<1 | 2 | 3>(1);
@@ -190,6 +192,19 @@ export const AppFooter: React.FC<AppFooterProps> = ({
             >
               Community Standards
             </button>
+            {onOpenSuperAdminGateway && (
+              <>
+                <span>•</span>
+                <button
+                  id="footer-super-admin-gateway-btn"
+                  onClick={onOpenSuperAdminGateway}
+                  className="text-rose-400 hover:text-rose-300 font-semibold transition cursor-pointer flex items-center gap-1"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{language === "ne" ? "प्रशासकीय गेटवे" : "Admin Gateway"}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

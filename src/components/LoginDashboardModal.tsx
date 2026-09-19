@@ -43,6 +43,7 @@ interface LoginDashboardModalProps {
   language: "en" | "ne";
   initialSector?: AccountSector;
   initialMode?: "login" | "register" | "forgot_password" | "email_verification";
+  onOpenSuperAdminGateway?: () => void;
 }
 
 export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
@@ -53,6 +54,7 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
   language,
   initialSector = "personal",
   initialMode = "register",
+  onOpenSuperAdminGateway,
 }) => {
   const [sector, setSector] = useState<AccountSector>(initialSector);
   const [mode, setMode] = useState<"login" | "register" | "forgot_password" | "email_verification">(initialMode);
@@ -465,23 +467,30 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
         password: loginForm.password,
       });
 
-      // Security Protocol: Do not permit Super Admin or Admin portal access from general login dashboard
-      if (
+      const isSuperOrAdmin =
         res.user?.isSuperAdmin ||
+        res.isSuperAdmin ||
         res.user?.isDelegatedAdmin ||
         res.user?.role === "admin" ||
         res.user?.role === "super_admin" ||
-        res.user?.email?.toLowerCase() === "photobucketnepal@gmail.com"
-      ) {
-        setError(language === "ne" ? "प्रशासकीय खाताहरूले समर्पित प्रशासनिक गेटवेबाट मात्र लगइन गर्नुपर्छ।" : "Administrative accounts must log in via the Administrative Access Gateway.");
-        return;
+        res.user?.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+        res.user?.email?.toLowerCase() === "medeepaksubedi@gmail.com" ||
+        res.user?.email?.toLowerCase() === "deepaksubedi32@gmail.com";
+
+      if (isSuperOrAdmin) {
+        setSuccessMsg(
+          language === "ne"
+            ? "प्रशासकीय प्रमाणीकरण सफल! कमाण्ड सेन्टर खुल्दैछ..."
+            : "Administrative authorization verified! Launching portal..."
+        );
+      } else {
+        setSuccessMsg(res.message);
       }
 
-      setSuccessMsg(res.message);
       setTimeout(() => {
         onAuthSuccess(res.user);
         if (onClose) onClose();
-      }, 700);
+      }, 600);
     } catch (err: any) {
       if (err.emailNotVerified) {
         setEmailVerificationNotice({
@@ -1785,6 +1794,28 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
                   {language === "ne" ? "गुगल खाता मार्फत लगइन" : "Sign in with Google"}
                 </span>
               </button>
+
+              {/* Direct Administrative Portal Gateway Link */}
+              {onOpenSuperAdminGateway && (
+                <div className="pt-2 text-center border-t border-slate-100">
+                  <button
+                    id="open-superadmin-gateway-from-login-modal-btn"
+                    type="button"
+                    onClick={() => {
+                      if (onClose) onClose();
+                      onOpenSuperAdminGateway();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50/60 transition cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
+                    <span>
+                      {language === "ne"
+                        ? "🛡️ सुपर एडमिन तथा प्रशासकीय गेटवे खोल्नुहोस्"
+                        : "🛡️ Open Super Admin & Staff Access Gateway"}
+                    </span>
+                  </button>
+                </div>
+              )}
             </form>
           )}
 

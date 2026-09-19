@@ -93,9 +93,9 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
     }
   };
 
-  const handleFillSuperAdminDemo = () => {
+  const handleFillSuperAdminDemo = (email = "Photobucketnepal@gmail.com") => {
     setRoleType("super_admin");
-    setIdentifier("Photobucketnepal@gmail.com");
+    setIdentifier(email);
     setPassword("Dmgs@12345@#");
     setError(null);
   };
@@ -317,16 +317,25 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
               </span>
             </div>
             {roleType === "super_admin" ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleFillSuperAdminDemo}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
-                >
-                  Fill Super Admin (Photobucketnepal)
-                </button>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  (Photobucketnepal@gmail.com / Dmgs@12345@#)
+              <div className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleFillSuperAdminDemo("Photobucketnepal@gmail.com")}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
+                  >
+                    Photobucket Root Super Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFillSuperAdminDemo("medeepaksubedi@gmail.com")}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
+                  >
+                    Deepak Subedi (medeepaksubedi@gmail.com)
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Password: <strong className="text-white">Dmgs@12345@#</strong> or <strong className="text-white">Dmgs@12345</strong>
                 </span>
               </div>
             ) : (

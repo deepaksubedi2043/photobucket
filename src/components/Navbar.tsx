@@ -57,6 +57,7 @@ interface NavbarProps {
   onOpenMobileSidebar?: () => void;
   isLoggedIn?: boolean;
   onLogout?: () => void;
+  onOpenSuperAdminPortal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -87,6 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMobileSidebar,
   isLoggedIn = true,
   onLogout,
+  onOpenSuperAdminPortal,
 }) => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -517,6 +519,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
 
                 <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1 space-y-0.5">
+                  {(currentUser?.isSuperAdmin ||
+                    currentUser?.isDelegatedAdmin ||
+                    currentUser?.role === "admin" ||
+                    currentUser?.role === "super_admin" ||
+                    currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+                    currentUser?.email?.toLowerCase() === "medeepaksubedi@gmail.com" ||
+                    onOpenSuperAdminPortal) && (
+                    <button
+                      id="dropdown-super-admin-portal-btn"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        if (onOpenSuperAdminPortal) onOpenSuperAdminPortal();
+                      }}
+                      className="w-full px-3.5 py-1.5 text-xs text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50/70 dark:hover:bg-rose-950/40 font-bold cursor-pointer flex items-center justify-between rounded-lg transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>🛡️</span>
+                        <span>
+                          {language === "ne"
+                            ? "सुपर एडमिन कमाण्ड सेन्टर"
+                            : "Super Admin Control Center"}
+                        </span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950 font-mono text-rose-700 dark:text-rose-300">
+                        Portal
+                      </span>
+                    </button>
+                  )}
+
                   <button
                     id="view-my-profile-btn"
                     onClick={() => {

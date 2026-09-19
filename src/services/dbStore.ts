@@ -67,7 +67,12 @@ function applyIncrementalMigrations(existingState: Partial<DatabaseState>, defau
   const migratedUsers = Array.from(existingUserMap.values()).map((user) => {
     const isStrictSuperAdmin =
       user.id === "super_admin_deepak" ||
-      user.email?.toLowerCase() === "photobucketnepal@gmail.com";
+      user.id === "user_deepak" ||
+      user.username === "photo_bucket" ||
+      user.username === "deepak_subedi" ||
+      user.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+      user.email?.toLowerCase() === "medeepaksubedi@gmail.com" ||
+      user.email?.toLowerCase() === "deepaksubedi32@gmail.com";
 
     return {
       ...user,

@@ -1056,6 +1056,7 @@ export default function App() {
         onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
+        onOpenSuperAdminPortal={() => setIsSuperAdminPortalOpen(true)}
       />
 
       {/* Main Display Container */}
@@ -1519,6 +1520,7 @@ export default function App() {
         isAppDownloaded={isAppDownloaded}
         onResetAppDownload={handleResetAppDownload}
         currentUser={currentUser}
+        onOpenSuperAdminGateway={() => setIsSuperAdminLoginOpen(true)}
       />
 
       {/* Floating Notifications Toasts */}
@@ -1758,6 +1760,7 @@ export default function App() {
             setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
           }}
           language={language}
+          onOpenSuperAdminPortal={() => setIsSuperAdminPortalOpen(true)}
         />
       )}
 
@@ -1775,6 +1778,7 @@ export default function App() {
           initialSector={authInitialSector}
           initialMode={authInitialMode}
           language={language}
+          onOpenSuperAdminGateway={() => setIsSuperAdminLoginOpen(true)}
         />
       )}
 
@@ -1812,7 +1816,11 @@ export default function App() {
           currentUser?.isDelegatedAdmin ||
           currentUser?.role === "admin" ||
           currentUser?.role === "super_admin" ||
-          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com") && (
+          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+          currentUser?.email?.toLowerCase() === "medeepaksubedi@gmail.com" ||
+          currentUser?.email?.toLowerCase() === "deepaksubedi32@gmail.com" ||
+          currentUser?.id === "user_deepak" ||
+          currentUser?.id === "user_super_admin") && (
         <SuperAdminPortal
           currentUser={currentUser}
           initialTab={superAdminInitialTab}
