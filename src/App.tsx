@@ -309,19 +309,20 @@ export default function App() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  // 5-Click Blank-Space Activation: Opens Super Admin & Delegated Admin Login Portal
+  // 10-Click Continuous Blank-Space Activation: Opens Super Admin & Delegated Admin Login Portal
   useEffect(() => {
     let clickTimestamps: number[] = [];
 
-    const handleDocumentClick = (e: MouseEvent) => {
+    const handleDocumentClick = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
       // Ignore clicks on interactive elements
       const interactive = target.closest(
-        'button, a, input, textarea, select, option, label, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="switch"], [role="checkbox"], [contenteditable="true"], video, audio, [data-interactive="true"], img'
+        'button, a, input, textarea, select, option, label, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="switch"], [role="checkbox"], [contenteditable="true"], video, audio, [data-interactive="true"]'
       );
       if (interactive) {
+        clickTimestamps = [];
         return;
       }
 
@@ -329,6 +330,7 @@ export default function App() {
       try {
         const style = window.getComputedStyle(target);
         if (style.cursor === "pointer") {
+          clickTimestamps = [];
           return;
         }
       } catch {
@@ -336,11 +338,14 @@ export default function App() {
       }
 
       const now = Date.now();
-      // Keep clicks occurring within a 2.5-second rolling window
-      clickTimestamps = clickTimestamps.filter((t) => now - t < 2500);
+      // Reset if more than 1.2s between consecutive clicks
+      if (clickTimestamps.length > 0 && now - clickTimestamps[clickTimestamps.length - 1] > 1200) {
+        clickTimestamps = [];
+      }
       clickTimestamps.push(now);
 
-      if (clickTimestamps.length >= 5) {
+      // Trigger upon 10 continuous rapid clicks
+      if (clickTimestamps.length >= 10) {
         clickTimestamps = [];
 
         // Check if current user is already an authenticated Super Admin or Delegated Admin
@@ -349,7 +354,11 @@ export default function App() {
           currentUser?.isDelegatedAdmin ||
           currentUser?.role === "admin" ||
           currentUser?.role === "super_admin" ||
-          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com"
+          currentUser?.email?.toLowerCase() === "photobucketnepal@gmail.com" ||
+          currentUser?.email?.toLowerCase() === "medeepaksubedi@gmail.com" ||
+          currentUser?.email?.toLowerCase() === "deepaksubedi32@gmail.com" ||
+          currentUser?.id === "user_deepak" ||
+          currentUser?.id === "user_super_admin"
         );
 
         if (isAlreadyAdmin) {
@@ -1799,7 +1808,7 @@ export default function App() {
         />
       )}
 
-      {/* 5-Click Blank-Space Activated Super Admin & Administrative Staff Login Portal */}
+      {/* 10-Click Blank-Space Activated Super Admin & Administrative Staff Login Portal */}
       <SuperAdminLoginModal
         isOpen={isSuperAdminLoginOpen}
         onClose={() => setIsSuperAdminLoginOpen(false)}

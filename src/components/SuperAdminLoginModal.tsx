@@ -1,16 +1,12 @@
 import React, { useState } from "react";
 import {
   ShieldAlert,
-  ShieldCheck,
   Lock,
-  KeyRound,
   UserCheck,
   Eye,
   EyeOff,
   AlertTriangle,
-  Sparkles,
   X,
-  Building2,
   CheckCircle2,
   Fingerprint,
 } from "lucide-react";
@@ -86,25 +82,11 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
         err.message ||
           (language === "ne"
             ? "प्रशासकीय प्रमाणीकरण असफल भयो। कृपया आधिकारिक विवरण जाँच गर्नुहोस्।"
-            : "Administrative authorization failed. Only authorized Super Admin and Admin staff created by Super Admin are permitted.")
+            : "Administrative authorization failed. Please check your credentials.")
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillSuperAdminDemo = (email = "Photobucketnepal@gmail.com") => {
-    setRoleType("super_admin");
-    setIdentifier(email);
-    setPassword("Dmgs@12345@#");
-    setError(null);
-  };
-
-  const handleFillStaffDemo = (staffEmail: string, staffPass: string) => {
-    setRoleType("admin");
-    setIdentifier(staffEmail);
-    setPassword(staffPass);
-    setError(null);
   };
 
   return (
@@ -117,7 +99,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
     >
       <div
         id="super-admin-login-modal"
-        className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Top Decorative Nepal Flag Gradient Strip */}
         <div className="h-1.5 w-full bg-gradient-to-r from-[#DC143C] via-indigo-600 to-[#003893]" />
@@ -133,13 +115,18 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                 <div className="flex items-center gap-2">
                   <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
                     {language === "ne"
-                      ? "सुपर एडमिन तथा प्रशासकीय लगइन"
+                      ? "प्रशासकीय लगइन गेटवे"
                       : "Administrative Access Gateway"}
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
                     Restricted
                   </span>
                 </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {language === "ne"
+                    ? "अधिकृत प्रशासकहरूको लागि मात्र"
+                    : "For authorized administrators only"}
+                </p>
               </div>
             </div>
 
@@ -148,7 +135,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-              title="Close Portal"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -157,78 +144,43 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
           {/* Role Mode Selector */}
           <div className="mt-4 grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
             <button
+              id="select-super-admin-role-btn"
               type="button"
               onClick={() => {
                 setRoleType("super_admin");
                 setError(null);
               }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition ${
+              className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
                 roleType === "super_admin"
                   ? "bg-rose-600 text-white shadow-md shadow-rose-900/40"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Fingerprint className="w-3.5 h-3.5" />
-              <span>{language === "ne" ? "रूट सुपर एडमिन" : "Root Super Admin"}</span>
+              <span>{language === "ne" ? "सुपर एडमिन" : "Root Super Admin"}</span>
             </button>
 
             <button
+              id="select-admin-role-btn"
               type="button"
               onClick={() => {
                 setRoleType("admin");
                 setError(null);
               }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition ${
+              className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
                 roleType === "admin"
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/40"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>{language === "ne" ? "प्रशासकीय स्टाफ" : "Admin Staff (Delegated)"}</span>
+              <span>{language === "ne" ? "प्रशासकीय स्टाफ" : "Admin Staff"}</span>
             </button>
           </div>
         </div>
 
         {/* Modal Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-          {/* Notification / Explanatory Banner */}
-          <div
-            className={`p-3 rounded-xl text-xs border ${
-              roleType === "super_admin"
-                ? "bg-rose-950/30 border-rose-800/40 text-rose-200"
-                : "bg-indigo-950/30 border-indigo-800/40 text-indigo-200"
-            }`}
-          >
-            <div className="flex items-start gap-2">
-              {roleType === "super_admin" ? (
-                <ShieldCheck className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              ) : (
-                <Building2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-              )}
-              <div className="space-y-1">
-                <p className="font-semibold">
-                  {roleType === "super_admin"
-                    ? language === "ne"
-                      ? "रूट सुपर एडमिन (दीपक सुवेदी): सम्पूर्ण प्रणाली नियन्त्रण"
-                      : "Root Super Admin (Deepak Subedi): Full Platform Control"
-                    : language === "ne"
-                    ? "सुपर एडमिनद्वारा सिर्जना गरिएका प्रशासकीय स्टाफ (Delegated Admins)"
-                    : "Administrative Staff: Created & Authorized by Super Admin Deepak Subedi"}
-                </p>
-                <p className="text-[11px] opacity-85 leading-relaxed">
-                  {roleType === "super_admin"
-                    ? language === "ne"
-                      ? "सुपर एडमिन आधिकारिक इमेल वा युजरनेम र गोप्य पासवर्ड प्रयोग गरी लगइन गर्नुहोस्।"
-                      : "Input authorized root credentials to unlock the 10-module Super Admin Control Center."
-                    : language === "ne"
-                    ? "सुपर एडमिनले प्रदान गरेको आधिकारिक संगठनात्मक इमेल (@photobucket.com.np) वा युजरनेम प्रयोग गर्नुहोस्।"
-                    : "Input your provisioned organizational staff email (@photobucket.com.np) and security key."}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Error Message Display */}
           {error && (
             <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl flex items-start gap-2 text-xs text-red-200 animate-in fade-in">
@@ -251,10 +203,10 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
               {roleType === "super_admin"
                 ? language === "ne"
                   ? "सुपर एडमिन इमेल वा युजरनेम"
-                  : "Super Admin Email or Identifier"
+                  : "Super Admin Email or Username"
                 : language === "ne"
-                ? "आधिकारिक स्टाफ इमेल वा युजरनेम"
-                : "Official Staff Email or Username"}
+                ? "स्टाफ इमेल वा युजरनेम"
+                : "Staff Email or Username"}
             </label>
             <div className="relative">
               <input
@@ -266,9 +218,9 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                   setError(null);
                 }}
                 placeholder={
-                  roleType === "super_admin"
-                    ? "Photobucketnepal@gmail.com or photo_bucket"
-                    : "e.g. pooja.sharma@photobucket.com.np or pooja_verification_lead"
+                  language === "ne"
+                    ? "आधिकारिक इमेल वा युजरनेम प्रविष्ट गर्नुहोस्"
+                    : "Enter official email or username"
                 }
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 font-mono transition"
                 autoFocus
@@ -281,7 +233,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wide">
-                {language === "ne" ? "गोप्य प्रशासकीय पासवर्ड" : "Administrative Password"}
+                {language === "ne" ? "प्रशासकीय पासवर्ड" : "Administrative Password"}
               </label>
               <button
                 type="button"
@@ -308,71 +260,6 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Demo Autofill Helpers */}
-          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                <KeyRound className="w-3 h-3 text-amber-400" />
-                <span>Authorized Credentials Helper</span>
-              </span>
-            </div>
-            {roleType === "super_admin" ? (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleFillSuperAdminDemo("Photobucketnepal@gmail.com")}
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
-                  >
-                    Photobucket Root Super Admin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleFillSuperAdminDemo("medeepaksubedi@gmail.com")}
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition cursor-pointer"
-                  >
-                    Deepak Subedi (medeepaksubedi@gmail.com)
-                  </button>
-                </div>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  Password: <strong className="text-white">Dmgs@12345@#</strong> or <strong className="text-white">Dmgs@12345</strong>
-                </span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleFillStaffDemo(
-                        "pooja.sharma@photobucket.com.np",
-                        "Pooja@Pb2026"
-                      )
-                    }
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 transition cursor-pointer"
-                  >
-                    Pooja Sharma (Verification Lead)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleFillStaffDemo(
-                        "bibek.tamang@photobucket.com.np",
-                        "Bibek@Pb2026"
-                      )
-                    }
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 transition cursor-pointer"
-                  >
-                    Bibek Tamang (Moderator)
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  Or enter credentials for any Sub-Admin created inside the Super Admin Portal.
-                </p>
-              </div>
-            )}
-          </div>
-
           {/* Submit Action Button */}
           <button
             id="super-admin-authenticate-submit-btn"
@@ -387,7 +274,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>{language === "ne" ? "प्रमाणीकरण हुँदैछ..." : "Verifying Credentials..."}</span>
+                <span>{language === "ne" ? "प्रमाणीकरण हुँदैछ..." : "Verifying..."}</span>
               </>
             ) : (
               <>
@@ -395,21 +282,21 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                 <span>
                   {roleType === "super_admin"
                     ? language === "ne"
-                      ? "सुपर एडमिन कमाण्ड सेन्टर खोल्नुहोस्"
-                      : "Authenticate & Open Super Admin Center"
+                      ? "सुपर एडमिन लगइन गर्नुहोस्"
+                      : "Sign In to Super Admin"
                     : language === "ne"
-                    ? "स्टाफ एडमिन पोर्टल खोल्नुहोस्"
-                    : "Authenticate & Open Staff Admin Portal"}
+                    ? "स्टाफ एडमिन लगइन गर्नुहोस्"
+                    : "Sign In to Admin Staff"}
                 </span>
               </>
             )}
           </button>
         </form>
 
-        {/* Modal Footer / Legal Notice */}
-        <div className="p-4 bg-slate-950/90 border-t border-slate-800/80 text-center">
+        {/* Modal Footer */}
+        <div className="p-3.5 bg-slate-950/90 border-t border-slate-800/80 text-center">
           <p className="text-[10px] text-slate-500 leading-relaxed">
-            फोटो Bucket Nepal Administrative Directives 2081 • Unauthorized login attempts are strictly prohibited and monitored with real-time audit logs.
+            फोटो Bucket Nepal • Authorized Administrative Gateway
           </p>
         </div>
       </div>
