@@ -79,6 +79,11 @@ export interface User {
   isSuperAdmin?: boolean;
   isDelegatedAdmin?: boolean;
   status?: "active" | "suspended" | "banned";
+  isApproved?: boolean;
+  approvalStatus?: "pending_approval" | "approved" | "rejected";
+  approvedAt?: string;
+  approvedBy?: string;
+  approvalRejectionReason?: string;
   createdAt?: string;
   email?: string;
   officialEmail?: string;
@@ -202,6 +207,7 @@ export interface AdminOverviewStats {
   verifiedBusinesses: number;
   verifiedUsersCount: number;
   pendingVerificationsCount: number;
+  pendingUserApprovalsCount?: number;
   pendingDocs: number;
   totalPosts: number;
   totalStories: number;
@@ -268,6 +274,8 @@ export const DEFAULT_CURRENT_USER: User = {
   isVerified: true,
   badge: "Mountain Visuals",
   accountType: "personal",
+  isApproved: true,
+  approvalStatus: "approved",
   firstName: "Deepak",
   lastName: "Subedi",
   email: "deepaksubedi32@gmail.com",

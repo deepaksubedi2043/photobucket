@@ -93,7 +93,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
 
   // Search & Filter States
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [userSectorFilter, setUserSectorFilter] = useState<"all" | "personal" | "business" | "suspended">("all");
+  const [userSectorFilter, setUserSectorFilter] = useState<"all" | "pending_approval" | "personal" | "business" | "suspended">("all");
   const [verificationFilter, setVerificationFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [postSearchQuery, setPostSearchQuery] = useState("");
   const [logCategoryFilter, setLogCategoryFilter] = useState<string>("all");
@@ -326,6 +326,34 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
     }
   };
 
+  // Action: Approve User Registration
+  const handleApproveRegistration = async (user: User) => {
+    try {
+      const res = await api.approveUserRegistration(user.id);
+      setUsersList((prev) => prev.map((u) => (u.id === user.id ? { ...u, ...res.user } : u)));
+      showToast(`Registration approved for @${user.username} (${user.fullName}). Account can now login.`, "success");
+    } catch (err: any) {
+      showToast(err.message || "Failed to approve registration", "error");
+    }
+  };
+
+  // Action: Reject User Registration
+  const handleRejectRegistration = async (user: User) => {
+    const reason = window.prompt(
+      `Enter rejection reason for @${user.username}:`,
+      "Registration details did not meet platform verification standards."
+    );
+    if (reason === null) return;
+
+    try {
+      const res = await api.rejectUserRegistration(user.id, reason);
+      setUsersList((prev) => prev.map((u) => (u.id === user.id ? { ...u, ...res.user } : u)));
+      showToast(`Registration rejected for @${user.username}.`, "error");
+    } catch (err: any) {
+      showToast(err.message || "Failed to reject registration", "error");
+    }
+  };
+
   // Action: Delete User
   const handleDeleteUser = async (user: User) => {
     if (user.isSuperAdmin) {
@@ -439,12 +467,16 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
 
     if (!matchesSearch) return false;
 
+    if (userSectorFilter === "pending_approval") return u.approvalStatus === "pending_approval" || u.isApproved === false;
     if (userSectorFilter === "personal") return u.accountType === "personal" && !u.isSuperAdmin;
     if (userSectorFilter === "business") return u.accountType === "business";
     if (userSectorFilter === "suspended") return u.status === "suspended" || u.status === "banned";
     return true;
   });
 
+  const pendingApprovalsCount = usersList.filter(
+    (u) => (u.approvalStatus === "pending_approval" || u.isApproved === false) && !u.isSuperAdmin
+  ).length;
   const businessUsers = usersList.filter((u) => u.accountType === "business");
 
   const pendingVerificationsCount = verificationRequests.filter((r) => r.status === "pending").length;
@@ -587,9 +619,15 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                   <Users className="w-4 h-4" />
                   <span>Users Activity & Control</span>
                 </div>
-                <span className="px-2 py-0.5 text-xs rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                  {usersList.length}
-                </span>
+                {pendingApprovalsCount > 0 ? (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500 text-slate-950 font-bold animate-pulse shadow-sm">
+                    {pendingApprovalsCount} pending
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {usersList.length}
+                  </span>
+                )}
               </button>
             )}
 
@@ -816,18 +854,33 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                 </div>
 
                 {/* Filter Pills */}
-                <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
                   <button
                     onClick={() => setUserSectorFilter("all")}
-                    className={`px-3 py-1 text-xs rounded-lg font-medium transition ${
+                    className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition ${
                       userSectorFilter === "all" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
                     }`}
                   >
                     All ({usersList.length})
                   </button>
                   <button
+                    onClick={() => setUserSectorFilter("pending_approval")}
+                    className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition ${
+                      userSectorFilter === "pending_approval"
+                        ? "bg-amber-600 text-white shadow-md shadow-amber-950"
+                        : "text-amber-400 hover:bg-amber-950/40"
+                    }`}
+                  >
+                    <span>Pending Approval</span>
+                    {pendingApprovalsCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 animate-pulse">
+                        {pendingApprovalsCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setUserSectorFilter("personal")}
-                    className={`px-3 py-1 text-xs rounded-lg font-medium transition ${
+                    className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition ${
                       userSectorFilter === "personal" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
                     }`}
                   >
@@ -835,7 +888,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                   </button>
                   <button
                     onClick={() => setUserSectorFilter("business")}
-                    className={`px-3 py-1 text-xs rounded-lg font-medium transition ${
+                    className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition ${
                       userSectorFilter === "business" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
                     }`}
                   >
@@ -843,7 +896,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                   </button>
                   <button
                     onClick={() => setUserSectorFilter("suspended")}
-                    className={`px-3 py-1 text-xs rounded-lg font-medium transition ${
+                    className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition ${
                       userSectorFilter === "suspended" ? "bg-rose-600 text-white" : "text-slate-400 hover:text-white"
                     }`}
                   >
@@ -955,17 +1008,28 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                           <td className="py-3 px-4">
                             <div className="space-y-1.5">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                                    u.status === "banned"
-                                      ? "bg-rose-950 text-rose-300 border border-rose-800"
-                                      : u.status === "suspended"
-                                      ? "bg-amber-950 text-amber-300 border border-amber-800"
-                                      : "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                                  }`}
-                                >
-                                  {u.status || "active"}
-                                </span>
+                                {!u.isSuperAdmin && (u.approvalStatus === "pending_approval" || u.isApproved === false) ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                    PENDING APPROVAL
+                                  </span>
+                                ) : u.approvalStatus === "rejected" ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                                    REJECTED
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      u.status === "banned"
+                                        ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                        : u.status === "suspended"
+                                        ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                        : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                                    }`}
+                                  >
+                                    {u.status || "active"}
+                                  </span>
+                                )}
                                 {(u.isVerified || u.isBusinessVerified) && (
                                   <VerifiedBadge
                                     category={u.verificationCategory || (u.accountType === "business" ? "businessman" : "creator")}
@@ -991,14 +1055,38 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-[10px] text-slate-500 font-mono block">Unverified</span>
+                                <span className="text-[10px] text-slate-500 font-mono block">
+                                  {u.approvalStatus === "pending_approval" ? "Awaiting Super Admin" : "Standard Account"}
+                                </span>
                               )}
                             </div>
                           </td>
 
                           {/* Action Buttons */}
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              {/* Pending Registration Approval Actions */}
+                              {!u.isSuperAdmin && (u.approvalStatus === "pending_approval" || u.isApproved === false) && (
+                                <>
+                                  <button
+                                    onClick={() => handleApproveRegistration(u)}
+                                    title="Approve user registration to allow login"
+                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-950 transition cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectRegistration(u)}
+                                    title="Reject user registration"
+                                    className="px-2.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 font-semibold text-xs flex items-center gap-1 transition cursor-pointer"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </button>
+                                </>
+                              )}
+
                               {/* Blue Tick Super Admin Manager Button */}
                               <button
                                 onClick={() => handleOpenBlueTickModal(u)}
@@ -1024,7 +1112,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                                   setEditFormData(u);
                                 }}
                                 title="Edit User Details"
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
@@ -1033,7 +1121,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                               <button
                                 onClick={() => setSelectedUserForPasswordReset(u)}
                                 title="Reset User Password"
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition"
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition cursor-pointer"
                               >
                                 <Key className="w-3.5 h-3.5" />
                               </button>
@@ -1045,7 +1133,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                                     <button
                                       onClick={() => handleSetUserStatus(u.id, "active")}
                                       title="Reactivate Account"
-                                      className="p-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 transition"
+                                      className="p-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 transition cursor-pointer"
                                     >
                                       <CheckCircle2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1053,7 +1141,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                                     <button
                                       onClick={() => handleSetUserStatus(u.id, "suspended")}
                                       title="Suspend Account"
-                                      className="p-1.5 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800 transition"
+                                      className="p-1.5 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800 transition cursor-pointer"
                                     >
                                       <Ban className="w-3.5 h-3.5" />
                                     </button>
@@ -1063,7 +1151,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                                   <button
                                     onClick={() => handleDeleteUser(u)}
                                     title="Permanently Delete User"
-                                    className="p-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 transition"
+                                    className="p-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 transition cursor-pointer"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>

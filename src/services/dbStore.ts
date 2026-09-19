@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-export const CURRENT_DATABASE_SCHEMA_VERSION = 3;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 4;
 
 export interface DatabaseState {
   schemaVersion: number;
@@ -68,6 +68,8 @@ function applyIncrementalMigrations(existingState: Partial<DatabaseState>, defau
     accountType: user.accountType || "personal",
     role: user.role || "user",
     status: user.status || "active",
+    isApproved: user.isApproved !== undefined ? user.isApproved : true,
+    approvalStatus: user.approvalStatus || "approved",
     isVerified: !!user.isVerified,
     isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : true,
     followersCount: typeof user.followersCount === "number" ? user.followersCount : 0,

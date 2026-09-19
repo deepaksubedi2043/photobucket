@@ -161,6 +161,13 @@ export interface User {
   isSuperAdmin?: boolean;
   isDelegatedAdmin?: boolean;
   status?: "active" | "suspended" | "banned";
+  isApproved?: boolean;
+  approvalStatus?: "pending_approval" | "approved" | "rejected";
+  approvedAt?: string;
+  approvedBy?: string;
+  approvalRejectionReason?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
   createdAt?: string;
   email?: string;
   officialEmail?: string;
@@ -2028,7 +2035,6 @@ app.post("/api/auth/register/personal", (req, res) => {
   let targetUser: User;
 
   if (existingUser) {
-    // Enable re-registration / account activation without blocking error
     targetUserId = existingUser.id;
     targetUser = existingUser;
     userCredentials[targetUserId] = password;
@@ -2036,7 +2042,11 @@ app.post("/api/auth/register/personal", (req, res) => {
     targetUser.firstName = firstName.trim();
     targetUser.lastName = lastName.trim();
     targetUser.mobileNumber = cleanPhone;
-    targetUser.isEmailVerified = false; // Strictly require clicking the verification link to access login!
+    targetUser.isEmailVerified = true;
+    if (targetUser.approvalStatus === undefined) {
+      targetUser.approvalStatus = "pending_approval";
+      targetUser.isApproved = false;
+    }
   } else {
     const generatedUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Math.floor(100 + Math.random() * 900)}`;
     targetUserId = `user_${Date.now()}`;
@@ -2061,11 +2071,16 @@ app.post("/api/auth/register/personal", (req, res) => {
       isVerified: false,
       badge: "New Creator",
       accountType: "personal",
+      role: "user",
+      status: "active",
+      isApproved: false,
+      approvalStatus: "pending_approval",
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: cleanEmail,
       mobileNumber: cleanPhone,
-      isEmailVerified: false, // Strictly require email verification
+      isEmailVerified: true, // No link verification required
+      createdAt: new Date().toISOString(),
     };
 
     users.unshift(newUser);
@@ -2077,58 +2092,31 @@ app.post("/api/auth/register/personal", (req, res) => {
     SUPER_ADMIN_USER.followersCount += 1;
   }
 
-  // Generate secure token & 6-digit code for email verification link
-  const token = generateVerificationToken();
-  const code = generateVerificationCode();
-  const verifyLink = buildVerificationLink(req, token);
-
-  emailVerificationStore[token] = {
-    userId: targetUserId,
-    email: cleanEmail,
-    token,
-    code,
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours validity
-    attempts: 0,
-    createdAt: new Date().toISOString(),
-  };
-  targetUser.emailVerificationToken = token;
-
-  const officialNotification = {
-    sender: "verify@photobucket.com.np (फोटो Bucket Official Email Dispatcher)",
-    subject: `फोटो Bucket - Verify your email address to access login`,
-    to: cleanEmail,
-    verifyLink,
-    token,
-    code,
-    sentAt: new Date().toISOString(),
-    expiresInHours: 24,
-  };
+  persistDb();
 
   addAuditLog(
-    "REGISTRATION_VERIFICATION_DISPATCHED",
+    "USER_REGISTRATION",
     "AUTH",
     targetUser.fullName,
-    `Registration submitted for ${cleanEmail}. Verification link dispatched. Login access restricted until verified.`,
+    `New personal registration submitted for ${cleanEmail} (${cleanPhone}). Account created and pending Super Admin or Admin verification.`,
     "info"
   );
 
-  broadcast("auth:verification_dispatched", {
+  broadcast("user:registered", targetUser);
+  broadcast("admin:new_user_registered", {
     userId: targetUserId,
-    email: cleanEmail,
+    user: targetUser,
+    sector: "personal",
     timestamp: new Date().toISOString(),
   });
 
   return res.status(201).json({
     success: true,
-    requiresVerification: true,
-    message: "Registration submitted! A verification link has been sent to your email. Please click the link to verify your email and access login.",
+    pendingApproval: true,
+    message: "दर्ता सम्पन्न भयो! (Registration successful!)",
     user: targetUser,
     email: cleanEmail,
     userId: targetUserId,
-    verifyLink,
-    token,
-    previewCode: code,
-    officialNotification,
   });
 });
 
@@ -2197,7 +2185,11 @@ app.post("/api/auth/register/business", (req, res) => {
     targetUser.businessName = businessName.trim();
     targetUser.panNumber = cleanPan;
     targetUser.registrationNumber = cleanReg;
-    targetUser.isEmailVerified = false; // Require verification
+    targetUser.isEmailVerified = true;
+    if (targetUser.approvalStatus === undefined) {
+      targetUser.approvalStatus = "pending_approval";
+      targetUser.isApproved = false;
+    }
   } else {
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 20);
     const generatedUsername = `${slug}_${Math.floor(100 + Math.random() * 900)}`;
@@ -2221,18 +2213,23 @@ app.post("/api/auth/register/business", (req, res) => {
       followersCount: 1,
       followingCount: 1, // Automatically follows official Super Admin (@photo_bucket)
       postsCount: 0,
-      isVerified: true,
-      badge: "Verified Business",
+      isVerified: false,
+      badge: "Pending Approval",
       accountType: "business",
+      role: "business",
+      status: "active",
+      isApproved: false,
+      approvalStatus: "pending_approval",
       businessName: businessName.trim(),
       panNumber: cleanPan,
       registrationNumber: cleanReg,
       email: cleanEmail,
-      isBusinessVerified: true,
+      isBusinessVerified: false,
       businessCategory: "Enterprise & Tourism Partner",
       documentName: documentName || "Company_Registration_Doc.pdf",
       documentUrl: documentFile || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
-      isEmailVerified: false, // Strictly require email verification
+      isEmailVerified: true, // No link verification required
+      createdAt: new Date().toISOString(),
     };
 
     users.unshift(newBizUser);
@@ -2244,52 +2241,164 @@ app.post("/api/auth/register/business", (req, res) => {
     SUPER_ADMIN_USER.followersCount += 1;
   }
 
-  // Generate verification link and code
-  const token = generateVerificationToken();
-  const code = generateVerificationCode();
-  const verifyLink = buildVerificationLink(req, token);
-
-  emailVerificationStore[token] = {
-    userId: targetUserId,
-    email: cleanEmail,
-    token,
-    code,
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    attempts: 0,
-    createdAt: new Date().toISOString(),
-  };
-  targetUser.emailVerificationToken = token;
-
-  const officialNotification = {
-    sender: "verify@photobucket.com.np (फोटो Bucket Official Email Dispatcher)",
-    subject: `फोटो Bucket - Verify your business email to access login`,
-    to: cleanEmail,
-    verifyLink,
-    token,
-    code,
-    sentAt: new Date().toISOString(),
-    expiresInHours: 24,
-  };
+  persistDb();
 
   addAuditLog(
-    "BUSINESS_REGISTRATION_VERIFICATION_DISPATCHED",
+    "BUSINESS_REGISTRATION",
     "AUTH",
     targetUser.businessName || targetUser.fullName,
-    `Business registration submitted for ${cleanEmail}. Verification link dispatched. Login access restricted until verified.`,
+    `New business registration submitted for ${cleanEmail} (PAN: ${cleanPan}). Account created and pending Super Admin or Admin verification.`,
     "info"
   );
 
+  broadcast("user:registered", targetUser);
+  broadcast("admin:new_user_registered", {
+    userId: targetUserId,
+    user: targetUser,
+    sector: "business",
+    timestamp: new Date().toISOString(),
+  });
+
   return res.status(201).json({
     success: true,
-    requiresVerification: true,
-    message: "Business registration submitted! A verification link has been sent to your corporate email. Click the link to verify and access login.",
+    pendingApproval: true,
+    message: "व्यावसायिक दर्ता सम्पन्न भयो! (Business registration submitted successfully!)",
     user: targetUser,
     email: cleanEmail,
     userId: targetUserId,
-    verifyLink,
-    token,
-    previewCode: code,
-    officialNotification,
+  });
+});
+
+// 3. Google Sign-In & Registration Endpoint
+app.post("/api/auth/google", (req, res) => {
+  const { uid, email, displayName, photoURL, sector, district, city, province } = req.body;
+
+  if (!email && !uid) {
+    return res.status(400).json({ success: false, message: "Google profile data (Email or UID) is required." });
+  }
+
+  const cleanEmail = (email || "").trim().toLowerCase();
+
+  // Root Super Admin direct Google check
+  if (
+    cleanEmail === "photobucketnepal@gmail.com" ||
+    cleanEmail === "medeepaksubedi@gmail.com" ||
+    cleanEmail === "deepaksubedi32@gmail.com"
+  ) {
+    activeUsers.add(SUPER_ADMIN_USER.id);
+    return res.json({
+      success: true,
+      message: "Root Super Admin authenticated via Google!",
+      user: SUPER_ADMIN_USER,
+      isSuperAdmin: true,
+    });
+  }
+
+  // Check if user already exists
+  let targetUser = users.find(
+    (u) => (cleanEmail && u.email?.toLowerCase() === cleanEmail) || (uid && u.id === uid)
+  );
+
+  if (targetUser) {
+    // Check banned status
+    if (targetUser.status === "banned") {
+      return res.status(403).json({ success: false, message: "This account has been banned due to community guidelines violation." });
+    }
+
+    // Check approval status
+    if (targetUser.approvalStatus === "pending_approval" || targetUser.isApproved === false) {
+      return res.status(403).json({
+        success: false,
+        pendingApproval: true,
+        message: targetUser.accountType === "business"
+          ? "तपाईंको व्यावसायिक खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण भएपछि लगइन गर्न सक्नुहुनेछ।"
+          : "तपाईंको खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
+      });
+    }
+
+    if (targetUser.approvalStatus === "rejected") {
+      return res.status(403).json({
+        success: false,
+        message: `तपाईंको दर्ता प्रमाणीकरण अस्वीकृत भएको छ: ${targetUser.approvalRejectionReason || "सम्पर्क गर्नुहोस्"}`,
+      });
+    }
+
+    // Approved: log in immediately
+    activeUsers.add(targetUser.id);
+    addAuditLog("USER_LOGIN_GOOGLE", "AUTH", targetUser.fullName, `User logged in via Google Auth.`, "info");
+
+    return res.json({
+      success: true,
+      message: `Welcome back, ${targetUser.fullName}!`,
+      user: targetUser,
+      isSuperAdmin: targetUser.isSuperAdmin === true,
+    });
+  }
+
+  // New Google User: Create account with pending_approval
+  const generatedUsername = (cleanEmail ? cleanEmail.split("@")[0] : "user")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .slice(0, 30);
+  const targetUserId = uid || `user_google_${Date.now()}`;
+  const resolvedDistrict = district && typeof district === "string" ? district.trim() : "Kathmandu";
+  const resolvedCity = city && typeof city === "string" ? city.trim() : "Kathmandu Metro";
+  const resolvedProvince = province && typeof province === "string" ? province.trim() : "Bagmati";
+
+  const newGoogleUser: User = {
+    id: targetUserId,
+    username: generatedUsername,
+    fullName: displayName || "Nepali Creator",
+    nepaliName: displayName || "Nepali Creator",
+    avatar: photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${targetUserId}`,
+    bio: "Joined via Google • Photo Bucket Nepal",
+    location: `${resolvedCity}, ${resolvedDistrict}, Nepal`,
+    district: resolvedDistrict,
+    city: resolvedCity,
+    province: resolvedProvince,
+    followersCount: 0,
+    followingCount: 1, // Auto-follow Super Admin
+    postsCount: 0,
+    isVerified: false,
+    badge: "New Creator",
+    accountType: sector || "personal",
+    role: "user",
+    status: "active",
+    isApproved: false,
+    approvalStatus: "pending_approval",
+    email: cleanEmail,
+    isEmailVerified: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  users.unshift(newGoogleUser);
+  userFollowingMap[newGoogleUser.id] = [SUPER_ADMIN_USER.id];
+  SUPER_ADMIN_USER.followersCount += 1;
+
+  persistDb();
+
+  addAuditLog(
+    "USER_REGISTRATION_GOOGLE",
+    "AUTH",
+    newGoogleUser.fullName,
+    `New account registered via Google (${cleanEmail}). Pending Super Admin or Admin approval.`,
+    "info"
+  );
+
+  broadcast("user:registered", newGoogleUser);
+  broadcast("admin:new_user_registered", {
+    userId: newGoogleUser.id,
+    user: newGoogleUser,
+    sector: newGoogleUser.accountType,
+    timestamp: new Date().toISOString(),
+  });
+
+  return res.status(200).json({
+    success: false,
+    isNewUser: true,
+    pendingApproval: true,
+    message: "तपाईंको खाता सुरक्षित रूपमा दर्ता भयो। सुपर एडमिन वा एडमिन प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
+    user: newGoogleUser,
   });
 });
 
@@ -2809,34 +2918,31 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(401).json({ success: false, message: "Incorrect password. Please try again." });
   }
 
-  // STRICT REQUIREMENT: Ensure user has clicked verification link before granting login access!
-  if (matchedUser.isEmailVerified === false) {
-    let activeRecord = Object.values(emailVerificationStore).find((r) => r.userId === matchedUser!.id);
-    if (!activeRecord) {
-      const token = generateVerificationToken();
-      const code = generateVerificationCode();
-      activeRecord = {
-        userId: matchedUser.id,
-        email: matchedUser.email || "",
-        token,
-        code,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        createdAt: new Date().toISOString(),
-        attempts: 0,
-      };
-      emailVerificationStore[token] = activeRecord;
+  // Check approval status: Super Admin or Admin verification required before first login
+  const isSuperOrAdmin =
+    matchedUser.isSuperAdmin ||
+    matchedUser.role === "super_admin" ||
+    matchedUser.role === "admin" ||
+    matchedUser.isDelegatedAdmin;
+
+  if (!isSuperOrAdmin) {
+    if (matchedUser.approvalStatus === "pending_approval" || matchedUser.isApproved === false) {
+      return res.status(403).json({
+        success: false,
+        pendingApproval: true,
+        message:
+          matchedUser.accountType === "business"
+            ? "तपाईंको व्यावसायिक खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण भएपछि लगइन गर्न सक्नुहुनेछ।"
+            : "तपाईंको खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
+      });
     }
-    const verifyLink = buildVerificationLink(req, activeRecord.token);
-    return res.status(403).json({
-      success: false,
-      emailNotVerified: true,
-      message: `Your email address (${matchedUser.email}) has not been verified yet. Please click the verification link sent to your email to access login.`,
-      email: matchedUser.email,
-      userId: matchedUser.id,
-      verifyLink,
-      token: activeRecord.token,
-      previewCode: activeRecord.code,
-    });
+
+    if (matchedUser.approvalStatus === "rejected") {
+      return res.status(403).json({
+        success: false,
+        message: `तपाईंको दर्ता प्रमाणीकरण अस्वीकृत भएको छ: ${matchedUser.approvalRejectionReason || "सम्पर्क गर्नुहोस्"}`,
+      });
+    }
   }
 
   activeUsers.add(matchedUser.id);
@@ -3615,6 +3721,7 @@ app.get("/api/admin/overview", (req, res) => {
   const pendingDocs = businessUsers.filter((u) => !u.isBusinessVerified);
   const verifiedUsersCount = users.filter((u) => u.isVerified).length;
   const pendingVerificationsCount = verificationRequests.filter((r) => r.status === "pending").length;
+  const pendingUserApprovalsCount = users.filter((u) => u.approvalStatus === "pending_approval" || u.isApproved === false).length;
   
   const totalComments = posts.reduce((acc, p) => acc + (p.comments?.length || 0), 0);
 
@@ -3751,6 +3858,7 @@ app.get("/api/admin/overview", (req, res) => {
       verifiedBusinesses: verifiedBusinesses.length,
       verifiedUsersCount,
       pendingVerificationsCount,
+      pendingUserApprovalsCount,
       pendingDocs: pendingDocs.length,
       totalPosts: posts.length,
       totalStories: stories.length,
@@ -3783,6 +3891,90 @@ app.get("/api/admin/users", (req, res) => {
     storedPasswordHint: userCredentials[u.id] ? "••••••••" : "nepal123",
   }));
   res.json({ success: true, users: userListWithCredentials });
+});
+
+// Super Admin / Admin Approve User Registration
+app.post("/api/admin/users/:id/approve-registration", (req, res) => {
+  const { id } = req.params;
+  const { reviewerName } = req.body;
+  const targetUser = users.find((u) => u.id === id);
+
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: "User account not found." });
+  }
+
+  targetUser.isApproved = true;
+  targetUser.approvalStatus = "approved";
+  targetUser.approvedAt = new Date().toISOString();
+  targetUser.approvedBy = reviewerName || "Deepak Subedi (Root Super Admin)";
+  delete targetUser.approvalRejectionReason;
+
+  // Persist updated database state
+  persistDb();
+
+  addAuditLog(
+    "USER_REGISTRATION_APPROVED",
+    "AUTH",
+    reviewerName || "Super Admin",
+    `Approved registration for ${targetUser.accountType === "business" ? "Business" : "Personal"} user @${targetUser.username} (${targetUser.fullName}). User can now log in.`,
+    "success"
+  );
+
+  broadcast("user:updated", targetUser);
+  broadcast("user:registration_approved", {
+    userId: targetUser.id,
+    username: targetUser.username,
+    fullName: targetUser.fullName,
+    accountType: targetUser.accountType,
+  });
+
+  res.json({
+    success: true,
+    message: `Account for @${targetUser.username} has been verified and approved successfully.`,
+    user: targetUser,
+  });
+});
+
+// Super Admin / Admin Reject User Registration
+app.post("/api/admin/users/:id/reject-registration", (req, res) => {
+  const { id } = req.params;
+  const { reason, reviewerName } = req.body;
+  const targetUser = users.find((u) => u.id === id);
+
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: "User account not found." });
+  }
+
+  targetUser.isApproved = false;
+  targetUser.approvalStatus = "rejected";
+  targetUser.approvalRejectionReason = reason || "Registration details did not meet platform verification standards.";
+  targetUser.reviewedAt = new Date().toISOString();
+  targetUser.reviewedBy = reviewerName || "Deepak Subedi (Root Super Admin)";
+
+  // Persist updated database state
+  persistDb();
+
+  addAuditLog(
+    "USER_REGISTRATION_REJECTED",
+    "AUTH",
+    reviewerName || "Super Admin",
+    `Rejected registration for @${targetUser.username} (${targetUser.fullName}). Reason: ${targetUser.approvalRejectionReason}`,
+    "warning"
+  );
+
+  broadcast("user:updated", targetUser);
+  broadcast("user:registration_rejected", {
+    userId: targetUser.id,
+    username: targetUser.username,
+    fullName: targetUser.fullName,
+    reason: targetUser.approvalRejectionReason,
+  });
+
+  res.json({
+    success: true,
+    message: `Account registration for @${targetUser.username} was rejected.`,
+    user: targetUser,
+  });
 });
 
 // Super Admin Modify User Details

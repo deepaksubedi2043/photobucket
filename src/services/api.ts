@@ -527,6 +527,58 @@ export const api = {
     return res.json();
   },
 
+  async loginWithGoogle(data: {
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL?: string;
+    sector?: "personal" | "business";
+    district?: string;
+    city?: string;
+    province?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    user?: User;
+    isNewUser?: boolean;
+    pendingApproval?: boolean;
+  }> {
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const err: any = new Error(json.message || "Google authentication failed");
+      err.pendingApproval = json.pendingApproval;
+      err.isNewUser = json.isNewUser;
+      throw err;
+    }
+    return json;
+  },
+
+  async approveUserRegistration(id: string): Promise<{ success: boolean; message: string; user: User }> {
+    const res = await fetch(`/api/admin/users/${id}/approve-registration`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to approve user registration");
+    return json;
+  },
+
+  async rejectUserRegistration(id: string, reason?: string): Promise<{ success: boolean; message: string; user: User }> {
+    const res = await fetch(`/api/admin/users/${id}/reject-registration`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to reject user registration");
+    return json;
+  },
+
   async resetAdminUserPassword(id: string, newPassword: string): Promise<{ success: boolean; message: string }> {
     const res = await fetch(`/api/admin/users/${id}/reset-password`, {
       method: "POST",
