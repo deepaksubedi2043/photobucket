@@ -37,7 +37,7 @@ import { firestoreSync } from "../services/firestoreSync";
 
 interface LoginDashboardModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   currentUser?: User;
   onAuthSuccess: (user: User) => void;
   language: "en" | "ne";
@@ -307,7 +307,7 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
       setSuccessMsg(res.message);
       setTimeout(() => {
         if (res.user) onAuthSuccess(res.user);
-        onClose();
+        if (onClose) onClose();
       }, 700);
     } catch (err: any) {
       if (err.accountExists && err.isEmailVerified === false) {
@@ -414,7 +414,7 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
       setSuccessMsg(res.message);
       setTimeout(() => {
         if (res.user) onAuthSuccess(res.user);
-        onClose();
+        if (onClose) onClose();
       }, 700);
     } catch (err: any) {
       if (err.accountExists && err.isEmailVerified === false) {
@@ -480,7 +480,7 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
       setSuccessMsg(res.message);
       setTimeout(() => {
         onAuthSuccess(res.user);
-        onClose();
+        if (onClose) onClose();
       }, 700);
     } catch (err: any) {
       if (err.emailNotVerified) {
@@ -631,7 +631,7 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
       );
       setTimeout(() => {
         onAuthSuccess(authenticatedUser);
-        onClose();
+        if (onClose) onClose();
       }, 700);
     } catch (err: any) {
       if (
@@ -897,13 +897,12 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
             </div>
           </div>
 
-          <button
-            id="close-auth-modal-btn"
-            onClick={onClose}
-            className="p-1.5 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-medium text-slate-300">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-[11px] font-mono tracking-wide">
+              {language === "ne" ? "सुरक्षित प्रमाणीकरण" : "Verified Auth"}
+            </span>
+          </div>
         </div>
 
         {/* Sector Switcher Tabs: Personal User vs Business Organisation */}

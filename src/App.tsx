@@ -1719,11 +1719,15 @@ export default function App() {
         />
       )}
 
-      {/* Login & Registration Sector Dashboard Modal */}
-      {isAuthOpen && (
+      {/* Login & Registration Sector Dashboard Modal (Cannot bypass without logging in) */}
+      {(isAuthOpen || !isLoggedIn) && (
         <LoginDashboardModal
-          isOpen={isAuthOpen}
-          onClose={() => setIsAuthOpen(false)}
+          isOpen={isAuthOpen || !isLoggedIn}
+          onClose={() => {
+            if (isLoggedIn) {
+              setIsAuthOpen(false);
+            }
+          }}
           currentUser={currentUser}
           onAuthSuccess={handleAuthSuccess}
           initialSector={authInitialSector}
