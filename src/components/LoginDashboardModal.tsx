@@ -504,7 +504,20 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
         setError(err.message || "Your email is not verified yet. Please click the verification link sent to your email to access login.");
         return;
       }
-      setError(err.message || "Login failed. Please check your credentials.");
+      const rawMsg = err.message || "";
+      const isSyntaxOrHtml =
+        rawMsg.includes("Unexpected token") ||
+        rawMsg.includes("is not valid JSON") ||
+        rawMsg.includes("<html") ||
+        rawMsg.includes("<!DOCTYPE");
+
+      const cleanError = isSyntaxOrHtml
+        ? language === "ne"
+          ? "सर्भरसँग सम्पर्क हुन सकेन। कृपया पुन: प्रयास गर्नुहोस्।"
+          : "Authentication service connection error. Please try again."
+        : rawMsg || (language === "ne" ? "लगइन असफल भयो। कृपया विवरण जाँच गर्नुहोस्।" : "Login failed. Please check your credentials.");
+
+      setError(cleanError);
     } finally {
       setLoading(false);
     }

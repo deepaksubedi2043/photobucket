@@ -24,6 +24,7 @@ import { FILTER_PRESETS } from "../data/filters";
 import confetti from "canvas-confetti";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { api } from "../services/api";
+import { calculatePostPopularityScore } from "../utils/searchFilterUtils";
 
 interface PostCardProps {
   post: Post;
@@ -36,6 +37,7 @@ interface PostCardProps {
   onUserClick?: (userId: string) => void;
   onBoostClick?: (post: Post) => void;
   language: "en" | "ne";
+  popularityScore?: number;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -49,7 +51,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   onUserClick,
   onBoostClick,
   language,
+  popularityScore: propScore,
 }) => {
+  const popularityScore = propScore !== undefined ? propScore : calculatePostPopularityScore(post);
   const [commentInput, setCommentInput] = useState("");
   const [showAllComments, setShowAllComments] = useState(false);
   const [showNepaliCaption, setShowNepaliCaption] = useState(language === "ne");
@@ -227,6 +231,15 @@ export const PostCard: React.FC<PostCardProps> = ({
               <span className="truncate">{post.musicTrack.split("-")[0]}</span>
             </div>
           )}
+
+          {/* Popularity / Trending Score Badge */}
+          <div
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold font-mono shadow-2xs"
+            title={language === "ne" ? `ट्रेन्डिङ स्कोर: ${popularityScore}` : `Popularity Score: ${popularityScore} (Likes, Comments & Recency)`}
+          >
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            <span>{popularityScore}</span>
+          </div>
         </div>
       </div>
 

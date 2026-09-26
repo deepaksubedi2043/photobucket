@@ -78,12 +78,23 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
       }
     } catch (err: any) {
       console.error("Admin login error:", err);
-      setError(
-        err.message ||
+      const rawMsg = err.message || "";
+      const isSyntaxOrHtml =
+        rawMsg.includes("Unexpected token") ||
+        rawMsg.includes("is not valid JSON") ||
+        rawMsg.includes("<html") ||
+        rawMsg.includes("<!DOCTYPE");
+      
+      const cleanError = isSyntaxOrHtml
+        ? language === "ne"
+          ? "सर्भरसँग सम्पर्क हुन सकेन। कृपया पुन: प्रयास गर्नुहोस्।"
+          : "Authentication service connection error. Please try again."
+        : rawMsg ||
           (language === "ne"
             ? "प्रशासकीय प्रमाणीकरण असफल भयो। कृपया आधिकारिक विवरण जाँच गर्नुहोस्।"
-            : "Administrative authorization failed. Please check your credentials.")
-      );
+            : "Administrative authorization failed. Please check your credentials.");
+
+      setError(cleanError);
     } finally {
       setLoading(false);
     }

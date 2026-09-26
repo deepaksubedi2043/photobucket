@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-export const CURRENT_DATABASE_SCHEMA_VERSION = 5;
+export const CURRENT_DATABASE_SCHEMA_VERSION = 6;
 
 export interface DatabaseState {
   schemaVersion: number;
@@ -18,6 +18,7 @@ export interface DatabaseState {
   followingMap: Record<string, string[]>;
   companyAds: any[];
   scrollingAds: any[];
+  credentials?: Record<string, string>;
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -141,8 +142,11 @@ function applyIncrementalMigrations(existingState: Partial<DatabaseState>, defau
   const auditLogs = Array.isArray(existingState.auditLogs) ? existingState.auditLogs : defaults.auditLogs;
   const adminTaskLogs = Array.isArray(existingState.adminTaskLogs) ? existingState.adminTaskLogs : defaults.adminTaskLogs;
   const delegatedAdmins = Array.isArray(existingState.delegatedAdmins) ? existingState.delegatedAdmins : defaults.delegatedAdmins;
-  const companyAds = Array.isArray(existingState.companyAds) ? existingState.companyAds : defaults.companyAds;
-  const scrollingAds = Array.isArray(existingState.scrollingAds) ? existingState.scrollingAds : defaults.scrollingAds;
+  const companyAds = Array.isArray(existingState.companyAds) && existingState.companyAds.length > 0 ? existingState.companyAds : defaults.companyAds;
+  const scrollingAds = Array.isArray(existingState.scrollingAds) && existingState.scrollingAds.length > 0 ? existingState.scrollingAds : defaults.scrollingAds;
+  const credentials = existingState.credentials && typeof existingState.credentials === "object"
+    ? { ...defaults.credentials, ...existingState.credentials }
+    : defaults.credentials || {};
 
   console.log(`[DB Migration] Successfully migrated to Schema v${CURRENT_DATABASE_SCHEMA_VERSION}. Preserved ${migratedUsers.length} users and ${migratedPosts.length} posts.`);
 
@@ -161,6 +165,7 @@ function applyIncrementalMigrations(existingState: Partial<DatabaseState>, defau
     followingMap,
     companyAds,
     scrollingAds,
+    credentials,
   };
 }
 

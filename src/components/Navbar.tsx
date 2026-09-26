@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Logo } from "./Logo";
-import { User, FeedType } from "../types";
+import { User, FeedType, SearchFilterState, MediaTypeFilter, DateRangeFilter, PopularitySortFilter } from "../types";
 import {
   Search,
   PlusSquare,
@@ -45,6 +45,8 @@ interface NavbarProps {
   onToggleNotifications: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  searchFilters?: SearchFilterState;
+  onSearchFiltersChange?: (updated: SearchFilterState) => void;
   isRealtimeConnected: boolean;
   deviceMode?: "desktop" | "mobile" | "dual";
   onSetDeviceMode?: (mode: "desktop" | "mobile" | "dual") => void;
@@ -76,6 +78,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleNotifications,
   searchQuery,
   onSearchChange,
+  searchFilters,
+  onSearchFiltersChange,
   isRealtimeConnected,
   deviceMode,
   onSetDeviceMode,
@@ -159,29 +163,145 @@ export const Navbar: React.FC<NavbarProps> = ({
             {searchOpen && (
               <div
                 id="navbar-search-popover"
-                className="absolute left-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                className="absolute left-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 space-y-3"
               >
+                {/* Search Input */}
                 <div className="relative flex items-center">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                   <input
                     autoFocus
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
+                    onChange={(e) => {
+                      onSearchChange(e.target.value);
+                      if (onSearchFiltersChange && searchFilters) {
+                        onSearchFiltersChange({
+                          ...searchFilters,
+                          query: e.target.value,
+                        });
+                      }
+                    }}
                     placeholder={t.searchPlaceholder}
-                    className="w-full pl-9 pr-8 py-2 text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl border border-transparent focus:border-[#003893] dark:focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                    className="w-full pl-9 pr-8 py-2.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl border border-transparent focus:border-[#003893] dark:focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
                   />
                   {searchQuery && (
                     <button
-                      onClick={() => onSearchChange("")}
+                      onClick={() => {
+                        onSearchChange("");
+                        if (onSearchFiltersChange && searchFilters) {
+                          onSearchFiltersChange({
+                            ...searchFilters,
+                            query: "",
+                          });
+                        }
+                      }}
                       className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
+
+                {/* Media Type Filter Chips */}
+                {searchFilters && onSearchFiltersChange && (
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 font-mono flex items-center justify-between">
+                      <span>Media Type</span>
+                      <span className="text-[9px] text-[#003893] dark:text-blue-400 font-bold">
+                        {searchFilters.mediaType.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: "all", label: "All Media" },
+                        { id: "images", label: "📸 Photos" },
+                        { id: "stories", label: "✨ Stories" },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            onSearchFiltersChange({
+                              ...searchFilters,
+                              mediaType: m.id as MediaTypeFilter,
+                            });
+                          }}
+                          className={`py-1 text-[11px] font-semibold rounded-lg transition cursor-pointer text-center ${
+                            searchFilters.mediaType === m.id
+                              ? "bg-[#003893] text-white shadow-2xs"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Date Range & Popularity Sort Quick Chips */}
+                {searchFilters && onSearchFiltersChange && (
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Date Range</div>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { id: "all", label: "All" },
+                          { id: "today", label: "24h" },
+                          { id: "week", label: "7d" },
+                          { id: "month", label: "30d" },
+                        ].map((d) => (
+                          <button
+                            key={d.id}
+                            onClick={() => {
+                              onSearchFiltersChange({
+                                ...searchFilters,
+                                dateRange: d.id as DateRangeFilter,
+                              });
+                            }}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition cursor-pointer ${
+                              searchFilters.dateRange === d.id
+                                ? "bg-rose-600 text-white"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                            }`}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Rank & Sort</div>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { id: "trending", label: "⚡ Trend" },
+                          { id: "most_liked", label: "❤️ Likes" },
+                          { id: "most_discussed", label: "💬 Chat" },
+                        ].map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              onSearchFiltersChange({
+                                ...searchFilters,
+                                sortBy: s.id as PopularitySortFilter,
+                              });
+                            }}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition cursor-pointer ${
+                              searchFilters.sortBy === s.id
+                                ? "bg-amber-600 text-white"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Popular Tags */}
-                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                   <div className="text-[10px] uppercase font-bold text-slate-400 mb-1.5 font-mono">Popular in Nepal</div>
                   <div className="flex flex-wrap gap-1">
                     {["#Himalayas", "#Kathmandu", "#Pokhara", "#Momo", "#Newa", "#Mustang"].map((tag) => (
@@ -189,6 +309,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         key={tag}
                         onClick={() => {
                           onSearchChange(tag);
+                          if (onSearchFiltersChange && searchFilters) {
+                            onSearchFiltersChange({
+                              ...searchFilters,
+                              query: tag,
+                            });
+                          }
                           setSearchOpen(false);
                         }}
                         className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/40 text-slate-600 dark:text-slate-300 hover:text-[#003893] dark:hover:text-blue-400 transition-colors cursor-pointer"

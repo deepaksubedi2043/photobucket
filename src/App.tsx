@@ -27,6 +27,10 @@ import { testFirestoreConnection } from "./lib/firebase";
 import { firestoreSync } from "./services/firestoreSync";
 import { liveUpdateSync } from "./services/liveUpdateSync";
 import { scrollingAdsService } from "./services/scrollingAdsService";
+import { SearchFilterControls } from "./components/SearchFilterControls";
+import { StoriesDiscoveryGrid } from "./components/StoriesDiscoveryGrid";
+import { SearchFilterState } from "./types";
+import { filterAndRankPosts, filterAndRankStories } from "./utils/searchFilterUtils";
 
 import {
   Sparkles,
@@ -59,7 +63,15 @@ import {
 
 export default function App() {
   const [users, setUsers] = useState<User[]>([DEFAULT_CURRENT_USER]);
-  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_CURRENT_USER);
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    try {
+      const savedUserStr = localStorage.getItem("photobucket_current_user");
+      if (savedUserStr) {
+        return JSON.parse(savedUserStr);
+      }
+    } catch {}
+    return DEFAULT_CURRENT_USER;
+  });
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -70,6 +82,13 @@ export default function App() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilters, setSearchFilters] = useState<SearchFilterState>({
+    query: "",
+    mediaType: "all",
+    dateRange: "all",
+    sortBy: "trending",
+    minPopularityScore: 0,
+  });
 
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [notifications, setNotifications] = useState<LiveNotification[]>([]);
@@ -180,6 +199,7 @@ export default function App() {
     try {
       localStorage.setItem(`pb_session_start_${authenticatedUser.id}`, Date.now().toString());
       localStorage.setItem("photobucket_is_logged_in", "true");
+      localStorage.setItem("photobucket_current_user", JSON.stringify(authenticatedUser));
     } catch {
       // Ignore if localStorage unavailable
     }
@@ -246,6 +266,7 @@ export default function App() {
     setIsLoggedIn(false);
     try {
       localStorage.setItem("photobucket_is_logged_in", "false");
+      localStorage.removeItem("photobucket_current_user");
       if (currentUser?.id) {
         localStorage.removeItem(`pb_session_start_${currentUser.id}`);
       }
@@ -409,7 +430,18 @@ export default function App() {
         const data = await api.getBootstrap();
         setUsers(data.users);
         if (data.users.length > 0) {
-          setCurrentUser(data.users[0]);
+          try {
+            const savedStr = localStorage.getItem("photobucket_current_user");
+            if (savedStr) {
+              const savedUser = JSON.parse(savedStr);
+              const matched = data.users.find((u: any) => u.id === savedUser.id);
+              setCurrentUser(matched || savedUser);
+            } else {
+              setCurrentUser(data.users[0]);
+            }
+          } catch {
+            setCurrentUser(data.users[0]);
+          }
         }
         setPosts(data.posts);
         setStories(data.stories);
@@ -825,8 +857,8 @@ export default function App() {
     );
   }
 
-  // Filtered posts based on active feed & search
-  let displayPosts = [...posts].filter((p) => {
+  // Filtered posts and stories based on active feed & multi-dimensional search filters
+  const baseEligiblePosts = posts.filter((p) => {
     // Hide rejected posts from public feed; only super admin or post author can see the rejection alert
     if (p.verificationStatus === "rejected") {
       return currentUser.isSuperAdmin || p.userId === currentUser.id;
@@ -834,180 +866,285 @@ export default function App() {
     return true;
   });
 
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    displayPosts = displayPosts.filter(
-      (p) =>
-        p.caption.toLowerCase().includes(q) ||
-        (p.nepaliCaption && p.nepaliCaption.includes(q)) ||
-        p.location.toLowerCase().includes(q) ||
-        p.district.toLowerCase().includes(q) ||
-        p.username.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  } else if (selectedTag) {
-    displayPosts = displayPosts.filter((p) =>
+  let candidatePosts = baseEligiblePosts;
+  if (selectedTag) {
+    candidatePosts = candidatePosts.filter((p) =>
       p.tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase())
     );
   } else if (categoryFilter !== "all") {
-    displayPosts = displayPosts.filter((p) => p.category === categoryFilter);
+    candidatePosts = candidatePosts.filter((p) => p.category === categoryFilter);
   }
 
   if (activeFeed === "following") {
     // Show posts from creators other than current user or specific list
-    displayPosts = displayPosts.filter((p) => p.userId !== currentUser.id);
+    candidatePosts = candidatePosts.filter((p) => p.userId !== currentUser.id);
   }
+
+  // Multi-dimensional Search, Date Range, Media Type & Popularity Ranking
+  const rankedPosts = filterAndRankPosts(candidatePosts, searchFilters);
+  const rankedStories = filterAndRankStories(stories, searchFilters);
+  const displayPosts = rankedPosts.map((rp) => rp.post);
 
   // Render the core Feed Content
   const renderFeedContent = (isMobileView = false) => {
     return (
       <div className="w-full space-y-5">
-        {/* Jhalak Stories Bar (Rendered only if not in Bento mode or in mobile view) */}
-        {(!isMobileView && feedLayout === "bento" && activeFeed === "for-you") ? null : (
-          <StoriesBar
-            stories={stories}
-            currentUser={currentUser}
-            onOpenStory={(s) => setViewingStory(s)}
-            onAddStory={() => setIsCreateOpen(true)}
-            language={language}
-          />
-        )}
-
-        {/* Feed Content based on Navigation */}
-        {activeFeed === "locations" ? (
-          <LocationExplorer
-            locations={locations}
-            posts={posts}
-            selectedLocation={selectedLocation}
-            onSelectLocation={(loc) => setSelectedLocation(loc)}
-            onSelectPost={(p) => {
-              // Highlight post or scroll
+        {/* Search & Multi-Dimensional Filter Controls (Media Type, Date Range, Popularity Score) */}
+        {(activeFeed === "for-you" || activeFeed === "trending" || activeFeed === "following") && (
+          <SearchFilterControls
+            filters={searchFilters}
+            onChangeFilters={(updated) => {
+              setSearchFilters(updated);
+              setSearchQuery(updated.query);
             }}
+            totalResultsCount={
+              searchFilters.mediaType === "stories"
+                ? rankedStories.length
+                : searchFilters.mediaType === "images"
+                ? rankedPosts.length
+                : rankedPosts.length + rankedStories.length
+            }
+            totalPhotosCount={rankedPosts.length}
+            totalStoriesCount={rankedStories.length}
             language={language}
-          />
-        ) : activeFeed === "communities" ? (
-          <CommunityDiscovery
-            communities={communities}
-            users={users}
-            posts={posts}
-            currentUser={currentUser}
-            onSelectTag={(t) => {
-              setSelectedTag(t);
-              setActiveFeed("for-you");
-            }}
-            onSelectUser={(u) => setProfileUser(u)}
-            language={language}
-          />
-        ) : feedLayout === "bento" && !isMobileView ? (
-          <BentoFeedGrid
-            posts={displayPosts}
-            stories={stories}
-            currentUser={currentUser}
-            communities={communities}
-            locations={locations}
-            onLike={handleLike}
-            onComment={handleComment}
-            onSave={handleSave}
             onTagClick={(tag) => {
               setSelectedTag(tag);
               setCategoryFilter("all");
             }}
-            onLocationClick={(loc, dist) => {
-              setSelectedLocation(loc);
-              setActiveFeed("locations");
-            }}
-            onUserClick={(userId) => {
-              const u = users.find((usr) => usr.id === userId);
-              if (u) setProfileUser(u);
-            }}
+          />
+        )}
+
+        {/* When Stories Media Type is selected, show Dedicated Stories Discovery Grid */}
+        {searchFilters.mediaType === "stories" ? (
+          <StoriesDiscoveryGrid
+            rankedStories={rankedStories}
+            currentUser={currentUser}
             onOpenStory={(s) => setViewingStory(s)}
-            onOpenCreate={() => setIsCreateOpen(true)}
             language={language}
           />
         ) : (
-          <div>
-            {/* Category Filter Chips */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-2.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs mb-4 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none transition-colors">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1 px-1">
-                  <Filter className="w-3 h-3 text-[#003893] dark:text-blue-400" />
-                  <span>Feeds:</span>
-                </span>
-
-                {[
-                  { id: "all", label: language === "ne" ? "सबै (All)" : "All Nepal" },
-                  { id: "himalayas", label: "Himalayas 🏔️" },
-                  { id: "culture", label: "Heritage 🛕" },
-                  { id: "food", label: "Momo & Food 🥟" },
-                  { id: "street", label: "KTM Streets 🚲" },
-                  { id: "wildlife", label: "Wild Chitwan 🦏" },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      setCategoryFilter(cat.id);
-                      setSelectedTag(null);
-                    }}
-                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer flex-shrink-0 ${
-                      categoryFilter === cat.id && !selectedTag
-                        ? "bg-[#003893] text-white shadow-xs"
-                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {selectedTag && (
-                <div className="flex items-center gap-1 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded-md text-xs font-bold text-[#DC143C] dark:text-rose-400 flex-shrink-0">
-                  <span>Tag: {selectedTag}</span>
-                  <button
-                    onClick={() => setSelectedTag(null)}
-                    className="hover:text-black dark:hover:text-white ml-1 text-slate-500 dark:text-slate-400"
-                  >
-                    ×
-                  </button>
+          <>
+            {/* If searching or filtering in 'All' media and matching stories exist, show Spotlight Stories Rail */}
+            {searchFilters.mediaType === "all" &&
+              rankedStories.length > 0 &&
+              (searchFilters.query ||
+                searchFilters.dateRange !== "all" ||
+                searchFilters.minPopularityScore > 0 ||
+                searchFilters.sortBy !== "trending") && (
+                <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-blue-500/10 dark:from-amber-950/30 dark:via-rose-950/30 dark:to-blue-950/30 rounded-3xl p-4 border border-amber-300/40 dark:border-amber-800/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded-md bg-amber-500 text-white shadow-xs">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                        {language === "ne" ? "मिल्दाजुल्दा नेपाली झलक (स्टोरीहरू)" : "Matching Nepali Stories (झलक)"}
+                      </h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-mono">
+                        {rankedStories.length}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setSearchFilters((prev) => ({ ...prev, mediaType: "stories" }))
+                      }
+                      className="text-xs font-bold text-[#003893] dark:text-blue-400 hover:underline cursor-pointer"
+                    >
+                      {language === "ne" ? "सबै स्टोरी हेर्नुहोस् ↗" : "View All Stories ↗"}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+                    {rankedStories.slice(0, 8).map(({ story, popularityScore }) => (
+                      <div
+                        key={story.id}
+                        onClick={() => setViewingStory(story)}
+                        className="relative w-28 h-36 rounded-2xl overflow-hidden cursor-pointer shrink-0 border border-slate-200 dark:border-slate-800 group shadow-2xs hover:scale-105 transition-all duration-200 flex flex-col justify-between p-2"
+                      >
+                        <img
+                          src={story.imageUrl}
+                          alt={story.caption || story.username}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-black/40 pointer-events-none" />
+                        <div className="relative z-10 flex items-center justify-between">
+                          <img
+                            src={story.userAvatar}
+                            alt={story.username}
+                            className="w-5 h-5 rounded-full object-cover border border-white"
+                          />
+                          <span className="px-1.5 py-0.2 rounded-full bg-black/70 text-amber-300 text-[9px] font-bold font-mono">
+                            ⚡{popularityScore}
+                          </span>
+                        </div>
+                        <div className="relative z-10">
+                          <p className="text-[11px] font-bold text-white truncate drop-shadow-sm">
+                            @{story.username}
+                          </p>
+                          {story.location && (
+                            <p className="text-[9px] text-slate-300 truncate">
+                              {story.location}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
 
-            {/* Posts Stream */}
-            {displayPosts.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 transition-colors">
-                <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No photos found</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Try selecting a different filter or search query.
-                </p>
-              </div>
-            ) : (
-              displayPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUser={currentUser}
-                  onLike={handleLike}
-                  onComment={handleComment}
-                  onSave={handleSave}
-                  onTagClick={(tag) => {
-                    setSelectedTag(tag);
-                    setCategoryFilter("all");
-                  }}
-                  onLocationClick={(loc, dist) => {
-                    setSelectedLocation(loc);
-                    setActiveFeed("locations");
-                  }}
-                  onUserClick={(userId) => {
-                    const u = users.find((usr) => usr.id === userId);
-                    if (u) setProfileUser(u);
-                  }}
-                  onBoostClick={(p) => setBoostTargetPost(p)}
-                  language={language}
-                />
-              ))
+            {/* Standard Jhalak Stories Bar (Rendered only if not in Bento mode or in mobile view) */}
+            {(!isMobileView && feedLayout === "bento" && activeFeed === "for-you") ? null : (
+              <StoriesBar
+                stories={stories}
+                currentUser={currentUser}
+                onOpenStory={(s) => setViewingStory(s)}
+                onAddStory={() => setIsCreateOpen(true)}
+                language={language}
+              />
             )}
-          </div>
+
+            {/* Feed Content based on Navigation */}
+            {activeFeed === "locations" ? (
+              <LocationExplorer
+                locations={locations}
+                posts={posts}
+                selectedLocation={selectedLocation}
+                onSelectLocation={(loc) => setSelectedLocation(loc)}
+                onSelectPost={(p) => {
+                  // Highlight post or scroll
+                }}
+                language={language}
+              />
+            ) : activeFeed === "communities" ? (
+              <CommunityDiscovery
+                communities={communities}
+                users={users}
+                posts={posts}
+                currentUser={currentUser}
+                onSelectTag={(t) => {
+                  setSelectedTag(t);
+                  setActiveFeed("for-you");
+                }}
+                onSelectUser={(u) => setProfileUser(u)}
+                language={language}
+              />
+            ) : feedLayout === "bento" && !isMobileView ? (
+              <BentoFeedGrid
+                posts={displayPosts}
+                stories={stories}
+                currentUser={currentUser}
+                communities={communities}
+                locations={locations}
+                onLike={handleLike}
+                onComment={handleComment}
+                onSave={handleSave}
+                onTagClick={(tag) => {
+                  setSelectedTag(tag);
+                  setCategoryFilter("all");
+                }}
+                onLocationClick={(loc, dist) => {
+                  setSelectedLocation(loc);
+                  setActiveFeed("locations");
+                }}
+                onUserClick={(userId) => {
+                  const u = users.find((usr) => usr.id === userId);
+                  if (u) setProfileUser(u);
+                }}
+                onOpenStory={(s) => setViewingStory(s)}
+                onOpenCreate={() => setIsCreateOpen(true)}
+                language={language}
+              />
+            ) : (
+              <div>
+                {/* Category Filter Chips */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-2.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs mb-4 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none transition-colors">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1 px-1">
+                      <Filter className="w-3 h-3 text-[#003893] dark:text-blue-400" />
+                      <span>Feeds:</span>
+                    </span>
+
+                    {[
+                      { id: "all", label: language === "ne" ? "सबै (All)" : "All Nepal" },
+                      { id: "himalayas", label: "Himalayas 🏔️" },
+                      { id: "culture", label: "Heritage 🛕" },
+                      { id: "food", label: "Momo & Food 🥟" },
+                      { id: "street", label: "KTM Streets 🚲" },
+                      { id: "wildlife", label: "Wild Chitwan 🦏" },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setCategoryFilter(cat.id);
+                          setSelectedTag(null);
+                        }}
+                        className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer flex-shrink-0 ${
+                          categoryFilter === cat.id && !selectedTag
+                            ? "bg-[#003893] text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedTag && (
+                    <div className="flex items-center gap-1 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded-md text-xs font-bold text-[#DC143C] dark:text-rose-400 flex-shrink-0">
+                      <span>Tag: {selectedTag}</span>
+                      <button
+                        onClick={() => setSelectedTag(null)}
+                        className="hover:text-black dark:hover:text-white ml-1 text-slate-500 dark:text-slate-400"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Posts Stream */}
+                {displayPosts.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 transition-colors">
+                    <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                      {language === "ne" ? "कुनै फोटो भेटिएन" : "No photos found"}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                      {language === "ne"
+                        ? "तपाईंको छनोट गरिएको समय अवधि, मिडिया प्रकार वा लोकप्रियता थ्रेसहोल्ड अनुसार कुनै नतिजा भेटिएन।"
+                        : "No photos match your active search keywords, date range, or popularity score threshold. Try adjusting your filters."}
+                    </p>
+                  </div>
+                ) : (
+                  rankedPosts.map(({ post, popularityScore }) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      popularityScore={popularityScore}
+                      currentUser={currentUser}
+                      onLike={handleLike}
+                      onComment={handleComment}
+                      onSave={handleSave}
+                      onTagClick={(tag) => {
+                        setSelectedTag(tag);
+                        setCategoryFilter("all");
+                      }}
+                      onLocationClick={(loc, dist) => {
+                        setSelectedLocation(loc);
+                        setActiveFeed("locations");
+                      }}
+                      onUserClick={(userId) => {
+                        const u = users.find((usr) => usr.id === userId);
+                        if (u) setProfileUser(u);
+                      }}
+                      onBoostClick={(p) => setBoostTargetPost(p)}
+                      language={language}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -1051,8 +1188,16 @@ export default function App() {
         unreadMessagesCount={unreadMessagesCount}
         unreadNotificationsCount={unreadNotificationsCount}
         onToggleNotifications={() => setShowNotificationsPopover(!showNotificationsPopover)}
-        searchQuery={searchQuery}
-        onSearchChange={(q) => setSearchQuery(q)}
+        searchQuery={searchFilters.query}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setSearchFilters((prev) => ({ ...prev, query: q }));
+        }}
+        searchFilters={searchFilters}
+        onSearchFiltersChange={(updated) => {
+          setSearchFilters(updated);
+          setSearchQuery(updated.query);
+        }}
         isRealtimeConnected={isRealtimeConnected}
         deviceMode={deviceMode}
         onSetDeviceMode={(m) => setDeviceMode(m)}

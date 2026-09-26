@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { FILTER_PRESETS } from "../data/filters";
 import confetti from "canvas-confetti";
+import { calculatePostPopularityScore } from "../utils/searchFilterUtils";
 
 interface BentoFeedGridProps {
   posts: Post[];
@@ -159,6 +160,14 @@ export const BentoFeedGrid: React.FC<BentoFeedGridProps> = ({
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-900 text-xs font-bold shadow-xs">
                   <Flame className="w-3.5 h-3.5 text-[#DC143C] fill-[#DC143C]" />
                   <span>Featured Snapshot</span>
+                </span>
+
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 border border-amber-400/30 text-xs font-bold font-mono shadow-xs"
+                  title={`Popularity Score: ${calculatePostPopularityScore(filteredPosts[0])}`}
+                >
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <span>{calculatePostPopularityScore(filteredPosts[0])}</span>
                 </span>
 
                 <button

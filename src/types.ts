@@ -469,6 +469,18 @@ export interface FilterPreset {
   overlayClass?: string;
 }
 
+export type MediaTypeFilter = "all" | "images" | "stories";
+export type DateRangeFilter = "all" | "today" | "week" | "month" | "year";
+export type PopularitySortFilter = "trending" | "most_liked" | "most_discussed" | "latest" | "oldest";
+
+export interface SearchFilterState {
+  query: string;
+  mediaType: MediaTypeFilter;
+  dateRange: DateRangeFilter;
+  sortBy: PopularitySortFilter;
+  minPopularityScore: number; // 0 for all, or 25, 50, 100
+}
+
 export type ScrollingAdCategory =
   | "notice"
   | "sponsored"

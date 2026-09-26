@@ -117,12 +117,84 @@ class RealtimeService {
 
 export const realtime = new RealtimeService();
 
+/**
+ * Bulletproof JSON fetch helper that:
+ * 1. Guarantees Accept: application/json header
+ * 2. Catches network failures gracefully
+ * 3. Reads response text first and validates JSON format
+ * 4. Completely prevents "Unexpected token '<', <html>... is not valid JSON" errors
+ * 5. Returns parsed data or throws a descriptive, typed error
+ */
+export async function safeJsonFetch<T = any>(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<T> {
+  const headers = new Headers(init?.headers || {});
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(input, { ...init, headers });
+  } catch (netErr: any) {
+    throw new Error(
+      netErr?.message || "Network connection error. Please check your internet connection."
+    );
+  }
+
+  const rawText = await res.text();
+  let data: any = null;
+
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    // Non-JSON response (e.g. HTML 404/500/gateway fallback)
+    if (!res.ok) {
+      throw new Error(`Server returned error (${res.status} ${res.statusText || "Error"}). Please try again.`);
+    }
+    throw new Error("Received an unexpected response from the server. Please refresh and try again.");
+  }
+
+  if (!res.ok) {
+    const error: any = new Error(data?.message || data?.error || `Request failed with status ${res.status}`);
+    if (typeof data === "object" && data !== null) {
+      Object.assign(error, data);
+    }
+    throw error;
+  }
+
+  return data as T;
+}
+
+export async function parseJsonSafely<T = any>(res: Response, defaultMessage = "Request failed"): Promise<T> {
+  const rawText = await res.text();
+  let data: any = null;
+
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    if (!res.ok) {
+      throw new Error(`Server returned error (${res.status} ${res.statusText || "Error"}).`);
+    }
+    throw new Error("Received an unexpected response from the server.");
+  }
+
+  if (!res.ok) {
+    const error: any = new Error(data?.message || data?.error || defaultMessage);
+    if (typeof data === "object" && data !== null) {
+      Object.assign(error, data);
+    }
+    throw error;
+  }
+
+  return data as T;
+}
+
 // REST API Methods
 export const api = {
   async getBootstrap(): Promise<BootstrapData> {
-    const res = await fetch("/api/bootstrap");
-    if (!res.ok) throw new Error("Failed to fetch initial data");
-    return res.json();
+    return safeJsonFetch<BootstrapData>("/api/bootstrap");
   },
 
   async createPost(postData: Partial<Post> & { testSimulationType?: string }): Promise<{
@@ -136,10 +208,10 @@ export const api = {
   }> {
     const res = await fetch("/api/posts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(postData),
     });
-    const data = await res.json();
+    const data = await parseJsonSafely(res, "Failed to create post");
     if (!res.ok || !data.success) {
       const err: any = new Error(data.message || "Failed to create post");
       err.blocked = data.blocked;
@@ -388,23 +460,13 @@ export const api = {
     verifyLink?: string;
     token?: string;
     email?: string;
+    previewCode?: string;
   }> {
-    const res = await fetch("/api/auth/login", {
+    return safeJsonFetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const err: any = new Error(json.message || "Login failed");
-      err.emailNotVerified = json.emailNotVerified;
-      err.verifyLink = json.verifyLink;
-      err.token = json.token;
-      err.email = json.email;
-      err.previewCode = json.previewCode;
-      throw err;
-    }
-    return json;
   },
 
   async requestPasswordResetCode(data: {
@@ -462,29 +524,48 @@ export const api = {
     return json;
   },
 
+  async changePasswordDirect(
+    userId: string,
+    data: { currentPassword?: string; newPassword: string; confirmPassword: string }
+  ): Promise<{ success: boolean; message: string; userId?: string }> {
+    const res = await fetch(`/api/users/${userId}/change-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to change password");
+    return json;
+  },
+
+  async deleteStory(storyId: string, userId?: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`/api/stories/${storyId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to delete story");
+    return json;
+  },
+
   // ==========================================
   // SUPER ADMIN API METHODS (FULL CONTROL)
   // ==========================================
   async getAdminOverview(): Promise<{ success: boolean; stats: AdminOverviewStats }> {
-    const res = await fetch("/api/admin/overview");
-    if (!res.ok) throw new Error("Failed to load Admin stats");
-    return res.json();
+    return safeJsonFetch("/api/admin/overview");
   },
 
   async getAdminUsers(): Promise<{ success: boolean; users: (User & { storedPasswordHint?: string })[] }> {
-    const res = await fetch("/api/admin/users");
-    if (!res.ok) throw new Error("Failed to load users for Admin portal");
-    return res.json();
+    return safeJsonFetch("/api/admin/users");
   },
 
   async updateAdminUser(id: string, updates: Partial<User>): Promise<{ success: boolean; user: User }> {
-    const res = await fetch(`/api/admin/users/${id}`, {
+    return safeJsonFetch(`/api/admin/users/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
-    if (!res.ok) throw new Error("Failed to update user");
-    return res.json();
   },
 
   async verifyAdminUser(
@@ -500,31 +581,25 @@ export const api = {
       verificationStatus?: "none" | "pending" | "approved" | "rejected";
     }
   ): Promise<{ success: boolean; user: User }> {
-    const res = await fetch(`/api/admin/users/${id}/verify`, {
+    return safeJsonFetch(`/api/admin/users/${id}/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to update user verification");
-    return res.json();
   },
 
   async setAdminUserStatus(id: string, status: "active" | "suspended" | "banned"): Promise<{ success: boolean; user: User }> {
-    const res = await fetch(`/api/admin/users/${id}/status`, {
+    return safeJsonFetch(`/api/admin/users/${id}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) throw new Error("Failed to update user account status");
-    return res.json();
   },
 
   async deleteAdminUser(id: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`/api/admin/users/${id}`, {
+    return safeJsonFetch(`/api/admin/users/${id}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error("Failed to delete user");
-    return res.json();
   },
 
   async loginWithGoogle(data: {
@@ -590,41 +665,31 @@ export const api = {
   },
 
   async getAdminPosts(): Promise<{ success: boolean; posts: Post[] }> {
-    const res = await fetch("/api/admin/posts");
-    if (!res.ok) throw new Error("Failed to fetch posts for moderation");
-    return res.json();
+    return safeJsonFetch("/api/admin/posts");
   },
 
   async deleteAdminPost(id: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`/api/admin/posts/${id}`, {
+    return safeJsonFetch(`/api/admin/posts/${id}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error("Failed to delete post");
-    return res.json();
   },
 
   async toggleFeaturePost(id: string): Promise<{ success: boolean; isFeatured: boolean; post: Post }> {
-    const res = await fetch(`/api/admin/posts/${id}/feature`, {
+    return safeJsonFetch(`/api/admin/posts/${id}/feature`, {
       method: "POST",
     });
-    if (!res.ok) throw new Error("Failed to toggle feature status");
-    return res.json();
   },
 
   async getAdminAuditLogs(): Promise<{ success: boolean; auditLogs: AuditLog[] }> {
-    const res = await fetch("/api/admin/audit-logs");
-    if (!res.ok) throw new Error("Failed to fetch audit logs");
-    return res.json();
+    return safeJsonFetch("/api/admin/audit-logs");
   },
 
   async broadcastAdminMessage(data: { title: string; message: string; type?: "info" | "warning" | "alert" }): Promise<any> {
-    const res = await fetch("/api/admin/broadcast", {
+    return safeJsonFetch("/api/admin/broadcast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to send broadcast");
-    return res.json();
   },
 
   // ==========================================
@@ -640,48 +705,37 @@ export const api = {
     notes?: string;
     badgeTitle?: string;
   }): Promise<{ success: boolean; message: string; user: User; request: VerificationRequest }> {
-    const res = await fetch("/api/verification/apply", {
+    return safeJsonFetch("/api/verification/apply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to submit verification request");
-    return json;
   },
 
   async getAdminVerificationRequests(): Promise<{ success: boolean; requests: VerificationRequest[] }> {
-    const res = await fetch("/api/admin/verification-requests");
-    if (!res.ok) throw new Error("Failed to fetch verification requests");
-    return res.json();
+    return safeJsonFetch("/api/admin/verification-requests");
   },
 
   async approveVerificationRequest(
     id: string,
     data: { badgeTitle?: string; category?: string }
   ): Promise<{ success: boolean; message: string; user: User; request: VerificationRequest }> {
-    const res = await fetch(`/api/admin/verification-requests/${id}/approve`, {
+    return safeJsonFetch(`/api/admin/verification-requests/${id}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to approve verification request");
-    return json;
   },
 
   async rejectVerificationRequest(
     id: string,
     data: { reason: string }
   ): Promise<{ success: boolean; message: string; user: User; request: VerificationRequest }> {
-    const res = await fetch(`/api/admin/verification-requests/${id}/reject`, {
+    return safeJsonFetch(`/api/admin/verification-requests/${id}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to reject verification request");
-    return json;
   },
 
   // ==========================================
@@ -875,9 +929,7 @@ export const api = {
     delegatedAdmins: DelegatedAdminUser[];
     admins?: DelegatedAdminUser[];
   }> {
-    const res = await fetch("/api/admin/delegated-admins");
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch delegated admins");
+    const json = await safeJsonFetch<{ success: boolean; delegatedAdmins?: DelegatedAdminUser[]; admins?: DelegatedAdminUser[] }>("/api/admin/delegated-admins");
     const list = json.delegatedAdmins || json.admins || [];
     return {
       success: json.success,
@@ -900,14 +952,11 @@ export const api = {
     message: string;
     admin: DelegatedAdminUser;
   }> {
-    const res = await fetch("/api/admin/delegated-admins", {
+    return safeJsonFetch("/api/admin/delegated-admins", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to create delegated admin");
-    return json;
   },
 
   async updateAdminPermissions(
@@ -918,14 +967,11 @@ export const api = {
     message: string;
     admin: DelegatedAdminUser;
   }> {
-    const res = await fetch(`/api/admin/delegated-admins/${id}/permissions`, {
+    return safeJsonFetch(`/api/admin/delegated-admins/${id}/permissions`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ permissions }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to update admin permissions");
-    return json;
   },
 
   async setAdminStatus(
@@ -936,14 +982,11 @@ export const api = {
     message: string;
     admin: DelegatedAdminUser;
   }> {
-    const res = await fetch(`/api/admin/delegated-admins/${id}/status`, {
+    return safeJsonFetch(`/api/admin/delegated-admins/${id}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to update admin status");
-    return json;
   },
 
   async resetDelegatedAdminPassword(
@@ -953,26 +996,20 @@ export const api = {
     success: boolean;
     message: string;
   }> {
-    const res = await fetch(`/api/admin/delegated-admins/${id}/reset-password`, {
+    return safeJsonFetch(`/api/admin/delegated-admins/${id}/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newPassword }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to reset admin password");
-    return json;
   },
 
   async deleteDelegatedAdmin(id: string): Promise<{
     success: boolean;
     message: string;
   }> {
-    const res = await fetch(`/api/admin/delegated-admins/${id}`, {
+    return safeJsonFetch(`/api/admin/delegated-admins/${id}`, {
       method: "DELETE",
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to delete admin");
-    return json;
   },
 
   async getAdminTaskLogs(params?: {
@@ -989,10 +1026,7 @@ export const api = {
     if (params?.category && params.category !== "all") query.append("category", params.category);
     if (params?.search) query.append("search", params.search);
 
-    const res = await fetch(`/api/admin/tasks?${query.toString()}`);
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch admin tasks");
-    return json;
+    return safeJsonFetch(`/api/admin/tasks?${query.toString()}`);
   },
 
   async logAdminTask(data: {
@@ -1010,14 +1044,11 @@ export const api = {
     success: boolean;
     task: AdminTaskLog;
   }> {
-    const res = await fetch("/api/admin/tasks/log", {
+    return safeJsonFetch("/api/admin/tasks/log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to record admin task");
-    return json;
   },
 
   async getSystemVersion(): Promise<{

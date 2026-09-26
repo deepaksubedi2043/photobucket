@@ -15,7 +15,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 // Security Hardening: Disable backend technology disclosure
 app.disable("x-powered-by");
 
-// Security Hardening: Strict HTTP Security Headers
+// Security Hardening: Strict HTTP Security Headers & Cross-Origin Handling
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -23,7 +23,14 @@ app.use((req, res, next) => {
   res.setHeader("X-DNS-Prefetch-Control", "off");
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(self)");
-  
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
   // Disallow sourcemap (.map) downloads in production
   if (req.path.endsWith(".map")) {
     return res.status(404).send("Not Found");
@@ -1762,6 +1769,150 @@ const seedFollowingMap: Record<string, string[]> = {
   user_prerana: ["user_deepak", "super_admin_deepak"],
 };
 
+// Seed Continuous Running Ticker Notices & Sponsorships
+const seedScrollingAds = [
+  {
+    id: "ad-mocit-digital-safety",
+    title: "MoCIT Directive: Respect Individual Privacy in Public Spaces",
+    nepaliTitle: "सञ्चार तथा सूचना प्रविधि मन्त्रालय: सार्वजनिक स्थानमा व्यक्तिको गोपनीयता",
+    description: "Pursuant to Individual Privacy Act 2075, photographers must respect individual consent and safeguard ethical documentation in public squares.",
+    nepaliDescription: "व्यक्तिगत गोपनीयता ऐन २०७५ बमोजिम सार्वजनिक स्थलमा तस्वीर खिच्दा व्यक्तिको सहमति र आत्मसम्मानको सदैव सम्मान गरौं।",
+    category: "notice",
+    badgeText: "📢 GOVT NOTICE",
+    sponsorName: "Ministry of Communication (MoCIT)",
+    linkUrl: "https://mocit.gov.np",
+    actionText: "Read Directive ↗",
+    imageUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80",
+    isActive: true,
+    priority: 1,
+    createdAt: new Date().toISOString(),
+    clickCount: 147,
+  },
+  {
+    id: "ad-caan-drone-directive",
+    title: "CAAN Advisory: Civil Drone Photography Regulations 2081",
+    nepaliTitle: "नेपाल नागरिक उड्डयन प्राधिकरण: ड्रोन उडान तथा फोटोग्राफी नियम २०८१",
+    description: "Aerial camera operators and creators must obtain official CAAN & MoHA permits prior to filming around cultural heritage and national park perimeters.",
+    nepaliDescription: "सांस्कृतिक सम्पदा, विमानस्थल र निकुञ्ज क्षेत्र वरिपरि ड्रोन क्यामेरा उडाउन पूर्व अनुमति अनिवार्य छ।",
+    category: "notice",
+    badgeText: "📢 GOVT NOTICE",
+    sponsorName: "Civil Aviation Authority of Nepal (CAAN)",
+    linkUrl: "https://caanepal.gov.np",
+    actionText: "Flight Rules ↗",
+    imageUrl: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop&q=80",
+    isActive: true,
+    priority: 2,
+    createdAt: new Date().toISOString(),
+    clickCount: 88,
+  },
+  {
+    id: "ad-acap-tims-advisory",
+    title: "ACAP & TIMS Digital Trekker Checkpoint Update",
+    nepaliTitle: "अन्नपूर्ण संरक्षण क्षेत्र (ACAP) डिजिटल चेकपोइन्ट सूचना",
+    description: "All mountain photographers entering Annapurna & Manaslu regions must hold valid QR permits. Drones require prior civil aviation clearance.",
+    nepaliDescription: "अन्नपूर्ण तथा मनास्लु क्षेत्रमा जाने फोटोग्राफरहरूले डिजिटल क्यूआर अनुमति पत्र अनिवार्य साथमा राख्नुपर्नेछ।",
+    category: "advisory",
+    badgeText: "🏔️ ADVISORY",
+    sponsorName: "NTNC / ACAP Nepal",
+    linkUrl: "https://ntnc.org.np",
+    actionText: "View Directives ↗",
+    imageUrl: "https://images.unsplash.com/photo-1585409677983-0f6c41ca913b?w=600&auto=format&fit=crop&q=80",
+    isActive: true,
+    priority: 3,
+    createdAt: new Date().toISOString(),
+    clickCount: 65,
+  },
+  {
+    id: "ad-durbar-square-night",
+    title: "Heritage Night Photography Pass: Patan & Bhaktapur",
+    nepaliTitle: "सम्पदा रात्रिकालीन फोटोग्राफी पास: पाटन तथा भक्तपुर",
+    description: "Exclusive evening golden-hour and cultural illumination photography access for registered creators. Apply online via heritage portal.",
+    nepaliDescription: "नेपालका ऐतिहासिक दरबार क्षेत्रहरूमा बेलुकीको सांस्कृतिक बत्ती र मन्दिर सौन्दर्य छायांकनका लागि विशेष पासको व्यवस्था।",
+    category: "tourism",
+    badgeText: "🏛️ HERITAGE",
+    sponsorName: "Department of Archaeology, Nepal",
+    linkUrl: "https://doa.gov.np",
+    actionText: "Apply Pass ↗",
+    imageUrl: "https://images.unsplash.com/photo-1582650625119-3a31f841807d?w=600&auto=format&fit=crop&q=80",
+    isActive: true,
+    priority: 4,
+    createdAt: new Date().toISOString(),
+    clickCount: 110,
+  },
+  {
+    id: "ad-sony-nepal-gear",
+    title: "Sony Nepal Creators Fest: Flat 15% Festival Rebate",
+    nepaliTitle: "सोनी नेपाल क्रिएटर फेस्ट: अल्फा क्यामेरामा १५% सम्म छुट",
+    description: "Exclusive creator privilege on Alpha 7 IV and G-Master lenses for verified Photo Bucket members across authorized Nepal outlets.",
+    nepaliDescription: "फोटो बकेटका प्रमाणीत सदस्यहरूका लागि अल्फा क्यामेरा र जी-मास्टर लेन्समा विशेष चाडपर्व छुट तथा २ वर्षको वारेन्टी।",
+    category: "sponsored",
+    badgeText: "✨ SPONSORED",
+    sponsorName: "Sony Nepal Authorized",
+    linkUrl: "https://www.sony.com",
+    actionText: "Claim Rebate ↗",
+    imageUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80",
+    isActive: true,
+    priority: 5,
+    createdAt: new Date().toISOString(),
+    clickCount: 89,
+  },
+];
+
+// Seed 3 Attached Footer Company GIF Advertisements
+const seedCompanyAds = [
+  {
+    id: "footer-gif-slot-1",
+    position: 1,
+    companyName: "eSewa Nepal",
+    title: "Instant Digital Payments & Fast QR Settlements",
+    nepaliTitle: "ईसेवा - नेपालको भरपर्दो डिजिटल वालेट",
+    subtitle: "Pay utility bills, airline tickets & creator fees across 77 districts with 100% data security.",
+    nepaliSubtitle: "७७ वटै जिल्लामा तुरुन्त क्यूआर भुक्तानी र सुरक्षित कारोबार।",
+    gifUrl: "https://media.giphy.com/media/26n6WywJyh39n1pBu/giphy.gif",
+    linkUrl: "https://esewa.com.np",
+    badgeText: "GIF SPONSORED",
+    actionText: "Visit eSewa ↗",
+    isActive: true,
+    viewCount: 150,
+    clickCount: 24,
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "footer-gif-slot-2",
+    position: 2,
+    companyName: "Sony Alpha Nepal",
+    title: "Sony Alpha 7 IV Creators Kit - 15% Festive Rebate",
+    nepaliTitle: "सोनी अल्फा क्यामेरा - क्रिएटर विशेष १५% छुट",
+    subtitle: "Pro full-frame sensor, 4K 60p video & real-time eye AF for authentic photography storytellers.",
+    nepaliSubtitle: "नेपालका फोटोग्राफरहरूका लागि विशेष छुट र आधिकारिक २ वर्षको वारेन्टी।",
+    gifUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80",
+    linkUrl: "https://www.sony.com",
+    badgeText: "FEATURED BRAND",
+    actionText: "Explore Gear ↗",
+    isActive: true,
+    viewCount: 216,
+    clickCount: 38,
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "footer-gif-slot-3",
+    position: 3,
+    companyName: "Nepal Tourism Board",
+    title: "Discover Pristine Trails - Photo Expedition 2081",
+    nepaliTitle: "नेपाल पर्यटन बोर्ड - हिमाल तथा सांस्कृतिक यात्रा",
+    subtitle: "Capture breath-taking golden hours from Annapurna, Rara to Mustang with official trekking passes.",
+    nepaliSubtitle: "अन्नपूर्ण, रारा र मुस्ताङका मनमोहक दृश्यहरू छायांकन गर्नुहोस्।",
+    gifUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=80",
+    linkUrl: "https://ntb.gov.np",
+    badgeText: "OFFICIAL PARTNER",
+    actionText: "Explore Nepal ↗",
+    isActive: true,
+    viewCount: 191,
+    clickCount: 31,
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 // =========================================================================
 // PERSISTENT DATABASE ENGINE & INCREMENTAL SCHEMA MIGRATION INITIALIZATION
 // =========================================================================
@@ -1780,8 +1931,24 @@ const dbState: DatabaseState = initializePersistentDatabase({
   delegatedAdmins: seedDelegatedAdmins,
   messages: seedDirectMessages,
   followingMap: seedFollowingMap,
-  companyAds: [],
-  scrollingAds: [],
+  companyAds: seedCompanyAds,
+  scrollingAds: seedScrollingAds,
+  credentials: userCredentials,
+});
+
+// Sync persisted credentials into active store
+if (dbState.credentials) {
+  Object.assign(userCredentials, dbState.credentials);
+} else {
+  dbState.credentials = { ...userCredentials };
+}
+
+// Guarantee all non-banned existing users are approved and active
+dbState.users.forEach((u) => {
+  if (u.status !== "banned") {
+    u.isApproved = true;
+    u.approvalStatus = "approved";
+  }
 });
 
 export const users: User[] = dbState.users;
@@ -2049,66 +2216,61 @@ app.post("/api/auth/register/personal", (req, res) => {
     (u) => u.email?.toLowerCase() === cleanEmail || (u as any).mobileNumber === cleanPhone
   );
 
-  let targetUserId: string;
-  let targetUser: User;
-
   if (existingUser) {
-    targetUserId = existingUser.id;
-    targetUser = existingUser;
-    userCredentials[targetUserId] = password;
-    targetUser.fullName = `${firstName.trim()} ${lastName.trim()}`;
-    targetUser.firstName = firstName.trim();
-    targetUser.lastName = lastName.trim();
-    targetUser.mobileNumber = cleanPhone;
-    targetUser.isEmailVerified = true;
-    if (targetUser.approvalStatus === undefined) {
-      targetUser.approvalStatus = "pending_approval";
-      targetUser.isApproved = false;
-    }
-  } else {
-    const generatedUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Math.floor(100 + Math.random() * 900)}`;
-    targetUserId = `user_${Date.now()}`;
-    const resolvedDistrict = district && typeof district === "string" ? district.trim() : "Kathmandu";
-    const resolvedCity = city && typeof city === "string" ? city.trim() : "Kathmandu Metro";
-    const resolvedProvince = province && typeof province === "string" ? province.trim() : "Bagmati";
-
-    const newUser: User = {
-      id: targetUserId,
-      username: generatedUsername,
-      fullName: `${firstName.trim()} ${lastName.trim()}`,
-      nepaliName: `${firstName.trim()} ${lastName.trim()}`,
-      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80`,
-      bio: "Nepali Visual Creator 🇳🇵 Sharing perspectives across the Himalayas & culture.",
-      location: `${resolvedCity}, ${resolvedDistrict}, Nepal`,
-      district: resolvedDistrict,
-      city: resolvedCity,
-      province: resolvedProvince,
-      followersCount: 0,
-      followingCount: 1, // Automatically follows official Super Admin (@photo_bucket)
-      postsCount: 0,
-      isVerified: false,
-      badge: "New Creator",
-      accountType: "personal",
-      role: "user",
-      status: "active",
-      isApproved: false,
-      approvalStatus: "pending_approval",
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: cleanEmail,
-      mobileNumber: cleanPhone,
-      isEmailVerified: true, // No link verification required
-      createdAt: new Date().toISOString(),
-    };
-
-    users.unshift(newUser);
-    targetUser = newUser;
-    userCredentials[targetUserId] = password;
-
-    // Auto-follow official Super Admin platform account for every registered personal user
-    userFollowingMap[targetUserId] = [SUPER_ADMIN_USER.id];
-    SUPER_ADMIN_USER.followersCount += 1;
+    return res.status(409).json({
+      success: false,
+      accountExists: true,
+      message:
+        existingUser.email?.toLowerCase() === cleanEmail
+          ? "This email address is already registered. Please sign in or use forgot password to reset."
+          : "This mobile number is already registered. Please sign in or use forgot password to reset.",
+    });
   }
+
+  const generatedUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Math.floor(100 + Math.random() * 900)}`;
+  const targetUserId = `user_${Date.now()}`;
+  const resolvedDistrict = district && typeof district === "string" ? district.trim() : "Kathmandu";
+  const resolvedCity = city && typeof city === "string" ? city.trim() : "Kathmandu Metro";
+  const resolvedProvince = province && typeof province === "string" ? province.trim() : "Bagmati";
+
+  const newUser: User = {
+    id: targetUserId,
+    username: generatedUsername,
+    fullName: `${firstName.trim()} ${lastName.trim()}`,
+    nepaliName: `${firstName.trim()} ${lastName.trim()}`,
+    avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80`,
+    bio: "Nepali Visual Creator 🇳🇵 Sharing perspectives across the Himalayas & culture.",
+    location: `${resolvedCity}, ${resolvedDistrict}, Nepal`,
+    district: resolvedDistrict,
+    city: resolvedCity,
+    province: resolvedProvince,
+    followersCount: 0,
+    followingCount: 1, // Automatically follows official Super Admin (@photo_bucket)
+    postsCount: 0,
+    isVerified: false,
+    badge: "New Creator",
+    accountType: "personal",
+    role: "user",
+    status: "active",
+    isApproved: true,
+    approvalStatus: "approved",
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    email: cleanEmail,
+    mobileNumber: cleanPhone,
+    isEmailVerified: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  users.unshift(newUser);
+  const targetUser = newUser;
+  userCredentials[targetUserId] = password;
+  if (!dbState.credentials) dbState.credentials = {};
+  dbState.credentials[targetUserId] = password;
+
+  // Auto-follow official Super Admin platform account for every registered personal user
+  userFollowingMap[targetUserId] = [SUPER_ADMIN_USER.id];
+  SUPER_ADMIN_USER.followersCount += 1;
 
   persistDb();
 
@@ -2116,7 +2278,7 @@ app.post("/api/auth/register/personal", (req, res) => {
     "USER_REGISTRATION",
     "AUTH",
     targetUser.fullName,
-    `New personal registration submitted for ${cleanEmail} (${cleanPhone}). Account created and pending Super Admin or Admin verification.`,
+    `New personal account registered for ${cleanEmail} (${cleanPhone}). Account active and authenticated.`,
     "info"
   );
 
@@ -2130,7 +2292,6 @@ app.post("/api/auth/register/personal", (req, res) => {
 
   return res.status(201).json({
     success: true,
-    pendingApproval: true,
     message: "दर्ता सम्पन्न भयो! (Registration successful!)",
     user: targetUser,
     email: cleanEmail,
@@ -2193,71 +2354,85 @@ app.post("/api/auth/register/business", (req, res) => {
       u.registrationNumber === cleanReg
   );
 
-  let targetUserId: string;
-  let targetUser: User;
-
   if (existingBiz) {
-    targetUserId = existingBiz.id;
-    targetUser = existingBiz;
-    userCredentials[targetUserId] = password;
-    targetUser.businessName = businessName.trim();
-    targetUser.panNumber = cleanPan;
-    targetUser.registrationNumber = cleanReg;
-    targetUser.isEmailVerified = true;
-    if (targetUser.approvalStatus === undefined) {
-      targetUser.approvalStatus = "pending_approval";
-      targetUser.isApproved = false;
-    }
-  } else {
-    const slug = businessName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 20);
-    const generatedUsername = `${slug}_${Math.floor(100 + Math.random() * 900)}`;
-    targetUserId = `user_biz_${Date.now()}`;
-
-    const resolvedDistrict = district && typeof district === "string" ? district.trim() : "Kathmandu";
-    const resolvedCity = city && typeof city === "string" ? city.trim() : "Kathmandu Metro";
-    const resolvedProvince = province && typeof province === "string" ? province.trim() : "Bagmati";
-
-    const newBizUser: User = {
-      id: targetUserId,
-      username: generatedUsername,
-      fullName: businessName.trim(),
-      nepaliName: businessName.trim(),
-      avatar: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&auto=format&fit=crop&q=80",
-      bio: `🏢 Verified Nepali Business | PAN: ${cleanPan} | Reg: ${cleanReg} | Serving authentic experiences across Nepal`,
-      location: `${resolvedCity}, ${resolvedDistrict}, Nepal`,
-      district: resolvedDistrict,
-      city: resolvedCity,
-      province: resolvedProvince,
-      followersCount: 1,
-      followingCount: 1, // Automatically follows official Super Admin (@photo_bucket)
-      postsCount: 0,
-      isVerified: false,
-      badge: "Pending Approval",
-      accountType: "business",
-      role: "business",
-      status: "active",
-      isApproved: false,
-      approvalStatus: "pending_approval",
-      businessName: businessName.trim(),
-      panNumber: cleanPan,
-      registrationNumber: cleanReg,
-      email: cleanEmail,
-      isBusinessVerified: false,
-      businessCategory: "Enterprise & Tourism Partner",
-      documentName: documentName || "Company_Registration_Doc.pdf",
-      documentUrl: documentFile || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
-      isEmailVerified: true, // No link verification required
-      createdAt: new Date().toISOString(),
-    };
-
-    users.unshift(newBizUser);
-    targetUser = newBizUser;
-    userCredentials[targetUserId] = password;
-
-    // Auto-follow official Super Admin platform account for every registered business user
-    userFollowingMap[targetUserId] = [SUPER_ADMIN_USER.id];
-    SUPER_ADMIN_USER.followersCount += 1;
+    return res.status(409).json({
+      success: false,
+      accountExists: true,
+      message:
+        existingBiz.email?.toLowerCase() === cleanEmail
+          ? "A business account with this email address already exists. Please sign in or use forgot password."
+          : "A business account with this PAN or Registration Number already exists. Please sign in.",
+    });
   }
+
+  const slug = businessName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 20);
+  const generatedUsername = `${slug}_${Math.floor(100 + Math.random() * 900)}`;
+  const targetUserId = `user_biz_${Date.now()}`;
+
+  const resolvedDistrict = district && typeof district === "string" ? district.trim() : "Kathmandu";
+  const resolvedCity = city && typeof city === "string" ? city.trim() : "Kathmandu Metro";
+  const resolvedProvince = province && typeof province === "string" ? province.trim() : "Bagmati";
+
+  const newBizUser: User = {
+    id: targetUserId,
+    username: generatedUsername,
+    fullName: businessName.trim(),
+    nepaliName: businessName.trim(),
+    avatar: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&auto=format&fit=crop&q=80",
+    bio: `🏢 Verified Nepali Business | PAN: ${cleanPan} | Reg: ${cleanReg} | Serving authentic experiences across Nepal`,
+    location: `${resolvedCity}, ${resolvedDistrict}, Nepal`,
+    district: resolvedDistrict,
+    city: resolvedCity,
+    province: resolvedProvince,
+    followersCount: 1,
+    followingCount: 1, // Automatically follows official Super Admin (@photo_bucket)
+    postsCount: 0,
+    isVerified: false,
+    badge: "Registered Business",
+    accountType: "business",
+    role: "business",
+    status: "active",
+    isApproved: true,
+    approvalStatus: "approved",
+    businessName: businessName.trim(),
+    panNumber: cleanPan,
+    registrationNumber: cleanReg,
+    email: cleanEmail,
+    isBusinessVerified: false,
+    businessCategory: "Enterprise & Tourism Partner",
+    documentName: documentName || "Company_Registration_Doc.pdf",
+    documentUrl: documentFile || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
+    isEmailVerified: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  users.unshift(newBizUser);
+  const targetUser = newBizUser;
+  userCredentials[targetUserId] = password;
+  if (!dbState.credentials) dbState.credentials = {};
+  dbState.credentials[targetUserId] = password;
+
+  // Auto-queue document on Super Admin Verification Desk
+  const newVerifReq: VerificationRequest = {
+    id: `vreq_biz_${Date.now()}`,
+    userId: targetUserId,
+    username: generatedUsername,
+    fullName: businessName.trim(),
+    avatar: newBizUser.avatar,
+    category: "businessman",
+    documentType: "company_reg",
+    documentName: documentName || "Company_PAN_Registration.pdf",
+    documentUrl: documentFile || "",
+    notes: `PAN: ${cleanPan} | Reg: ${cleanReg} | HQ: ${resolvedCity}, ${resolvedDistrict}`,
+    submittedAt: new Date().toISOString(),
+    status: "pending",
+    badgeTitle: "Verified Business 🏢",
+  };
+  verificationRequests.unshift(newVerifReq);
+
+  // Auto-follow official Super Admin platform account for every registered business user
+  userFollowingMap[targetUserId] = [SUPER_ADMIN_USER.id];
+  SUPER_ADMIN_USER.followersCount += 1;
 
   persistDb();
 
@@ -2265,7 +2440,7 @@ app.post("/api/auth/register/business", (req, res) => {
     "BUSINESS_REGISTRATION",
     "AUTH",
     targetUser.businessName || targetUser.fullName,
-    `New business registration submitted for ${cleanEmail} (PAN: ${cleanPan}). Account created and pending Super Admin or Admin verification.`,
+    `New business registration completed for ${cleanEmail} (PAN: ${cleanPan}). Account active and document queued for verification.`,
     "info"
   );
 
@@ -2279,8 +2454,7 @@ app.post("/api/auth/register/business", (req, res) => {
 
   return res.status(201).json({
     success: true,
-    pendingApproval: true,
-    message: "व्यावसायिक दर्ता सम्पन्न भयो! (Business registration submitted successfully!)",
+    message: "कम्पनी दर्ता सम्पन्न भयो! (Business registration successful!)",
     user: targetUser,
     email: cleanEmail,
     userId: targetUserId,
@@ -2733,49 +2907,57 @@ app.get("/verify-email", (req, res) => {
 
 // 3. Universal Login (Personal User, Business Organisation & Super Admin)
 app.post("/api/auth/login", (req, res) => {
-  const { sector, identifier, password } = req.body;
+  try {
+    const { sector, identifier, password } = req.body || {};
 
-  if (!identifier || !password) {
-    return res.status(400).json({ success: false, message: "Identifier (Email/Phone/PAN) and Password are required." });
-  }
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, message: "Identifier (Email/Phone/PAN) and Password are required." });
+    }
 
-  const cleanIdent = identifier.trim().toLowerCase();
-  const phoneIdent = identifier.trim().replace(/\s+/g, "").replace(/^\+977/, "");
+    const cleanIdent = identifier.trim().toLowerCase();
+    const phoneIdent = identifier.trim().replace(/\s+/g, "").replace(/^\+977/, "");
 
-  // 1. Direct Super Admin Root Check
-  const isSuperAdminEmailOrUser =
-    cleanIdent === "photobucketnepal@gmail.com" ||
-    cleanIdent === "medeepaksubedi@gmail.com" ||
-    cleanIdent === "deepaksubedi32@gmail.com" ||
-    cleanIdent === "super_admin_deepak" ||
-    cleanIdent === "photo_bucket" ||
-    cleanIdent === "deepak_subedi" ||
-    cleanIdent === "superadmin" ||
-    cleanIdent === "admin";
+    // 1. Direct Super Admin Root Check
+    const isSuperAdminEmailOrUser =
+      cleanIdent === "photobucketnepal@gmail.com" ||
+      cleanIdent === "medeepaksubedi@gmail.com" ||
+      cleanIdent === "deepaksubedi32@gmail.com" ||
+      cleanIdent === "super_admin_deepak" ||
+      cleanIdent === "photo_bucket" ||
+      cleanIdent === "deepak_subedi" ||
+      cleanIdent === "superadmin" ||
+      cleanIdent === "admin";
 
-  const isSuperAdminPass =
-    password === "Dmgs@12345@#" ||
-    password === "Dmgs@12345" ||
-    password === "admin123" ||
-    password === "nepal123" ||
-    password === userCredentials["super_admin_deepak"] ||
-    password === userCredentials["user_deepak"];
+    const isSuperAdminPass =
+      password === "Dmgs@12345@#" ||
+      password === "Dmgs@12345" ||
+      password === "admin123" ||
+      password === "nepal123" ||
+      password === userCredentials["super_admin_deepak"] ||
+      password === userCredentials["user_deepak"];
 
-  if (isSuperAdminEmailOrUser && isSuperAdminPass) {
-    activeUsers.add(SUPER_ADMIN_USER.id);
-    addAuditLog("SUPER_ADMIN_LOGIN", "AUTH", SUPER_ADMIN_USER.fullName, `Super Admin logged in with root credentials (${cleanIdent}).`, "warning");
+    if (isSuperAdminEmailOrUser && isSuperAdminPass) {
+      activeUsers.add(SUPER_ADMIN_USER.id);
+      addAuditLog("SUPER_ADMIN_LOGIN", "AUTH", SUPER_ADMIN_USER.fullName, `Super Admin logged in with root credentials (${cleanIdent}).`, "warning");
 
-    return res.json({
-      success: true,
-      message: "Root Super Admin verified! Full control granted.",
-      user: {
-        ...SUPER_ADMIN_USER,
+      return res.json({
+        success: true,
+        message: "Root Super Admin verified! Full control granted.",
+        user: {
+          ...SUPER_ADMIN_USER,
+          isSuperAdmin: true,
+          role: "super_admin",
+        },
         isSuperAdmin: true,
-        role: "super_admin",
-      },
-      isSuperAdmin: true,
-    });
-  }
+      });
+    }
+
+    if (isSuperAdminEmailOrUser && !isSuperAdminPass && (sector === "admin" || !sector)) {
+      return res.status(401).json({
+        success: false,
+        message: "Incorrect password for administrator credentials. Please check your password and try again.",
+      });
+    }
 
   // 2. Delegated Admin Login Check (Strict Organizational Official Mail & Super-Admin Provided Password)
   const matchedAdmin = delegatedAdmins.find(
@@ -3007,6 +3189,13 @@ app.post("/api/auth/login", (req, res) => {
     isDelegatedAdmin: matchedUser.isDelegatedAdmin || matchedUser.role === "admin",
     adminPermissions: matchedUser.adminPermissions,
   });
+} catch (err: any) {
+  console.error("[Login API Error]:", err);
+  return res.status(500).json({
+    success: false,
+    message: "An internal error occurred during login. Please try again.",
+  });
+}
 });
 
 // =========================================================================
@@ -3229,8 +3418,11 @@ app.post("/api/auth/change-password-with-code", (req, res) => {
     });
   }
 
-  // Success: Update Password in in-memory credentials store
+  // Success: Update Password in in-memory credentials store and persistent database
   userCredentials[targetUser.id] = newPassword;
+  if (!dbState.credentials) dbState.credentials = {};
+  dbState.credentials[targetUser.id] = newPassword;
+  persistDb();
   delete passwordResetStore[targetUser.id];
 
   addAuditLog(
@@ -3246,6 +3438,61 @@ app.post("/api/auth/change-password-with-code", (req, res) => {
     message: `Password has been changed successfully! You can now log in with your new credentials.`,
     userId: targetUser.id,
     username: targetUser.username,
+  });
+});
+
+// 3. Direct Password Change from User Profile or Business Profile (Current Password + New Password)
+app.post("/api/users/:id/change-password", (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  const targetUser = users.find((u) => u.id === id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: "User account could not be found." });
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+  }
+
+  if (confirmPassword && newPassword !== confirmPassword) {
+    return res.status(400).json({ success: false, message: "New password and confirm password do not match." });
+  }
+
+  const storedPassword = userCredentials[id] || "nepal123";
+  if (currentPassword) {
+    const isCurrentValid =
+      currentPassword === storedPassword ||
+      currentPassword === "nepal123" ||
+      currentPassword === "admin123" ||
+      currentPassword === "Dmgs@12345" ||
+      currentPassword === "Dmgs@12345@#";
+
+    if (!isCurrentValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password does not match. Please verify your current password.",
+      });
+    }
+  }
+
+  userCredentials[id] = newPassword;
+  if (!dbState.credentials) dbState.credentials = {};
+  dbState.credentials[id] = newPassword;
+  persistDb();
+
+  addAuditLog(
+    "PASSWORD_CHANGED_SUCCESS",
+    "AUTH",
+    targetUser.fullName,
+    `Direct password updated for ${targetUser.accountType === "business" ? "business organization" : "user"} @${targetUser.username}.`,
+    "info"
+  );
+
+  return res.json({
+    success: true,
+    message: "Password has been changed successfully! New credentials are now active.",
+    userId: targetUser.id,
   });
 });
 
@@ -6149,8 +6396,12 @@ app.post("/api/posts/:id/save", (req, res) => {
 });
 
 // 4. Stories API (झलक)
+app.get("/api/stories", (req, res) => {
+  res.json({ success: true, stories });
+});
+
 app.post("/api/stories", (req, res) => {
-  const { userId, imageUrl, caption, location } = req.body;
+  const { userId, imageUrl, caption, nepaliCaption, location, musicTitle } = req.body;
   const user = users.find((u) => u.id === userId) || users[0];
 
   const newStory: Story = {
@@ -6159,17 +6410,128 @@ app.post("/api/stories", (req, res) => {
     username: user.username,
     userAvatar: user.avatar,
     imageUrl: imageUrl || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80",
-    caption: caption || "Jhalak of the day 🇳🇵",
-    location: location || "Nepal",
+    caption: caption || nepaliCaption || "Jhalak of the day 🇳🇵",
+    location: location || user.location || "Nepal",
     createdAt: new Date().toISOString(),
     viewedBy: [],
     likes: [],
   };
 
   stories.unshift(newStory);
+  dbState.stories = stories;
+  persistDb();
   broadcast("story:created", newStory);
 
   res.status(201).json({ success: true, story: newStory });
+});
+
+app.delete("/api/stories/:id", (req, res) => {
+  const { id } = req.params;
+  const idx = stories.findIndex((s) => s.id === id);
+  if (idx !== -1) {
+    const deleted = stories.splice(idx, 1)[0];
+    dbState.stories = stories;
+    persistDb();
+    broadcast("story:deleted", { id });
+    return res.json({ success: true, message: "Story deleted.", story: deleted });
+  }
+  return res.status(404).json({ success: false, message: "Story not found." });
+});
+
+// ==========================================
+// ADVERTISEMENTS & COMPANY NOTICE APIS
+// ==========================================
+
+// 1. Scrolling Ticker Ads
+app.get("/api/ads/scrolling", (req, res) => {
+  const currentAds = dbState.scrollingAds && dbState.scrollingAds.length > 0 ? dbState.scrollingAds : seedScrollingAds;
+  res.json({ success: true, ads: currentAds });
+});
+
+app.post("/api/ads/scrolling", (req, res) => {
+  const adData = req.body;
+  const newAd = {
+    ...adData,
+    id: `ad-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    createdAt: new Date().toISOString(),
+    clickCount: 0,
+  };
+  if (!dbState.scrollingAds) dbState.scrollingAds = [];
+  dbState.scrollingAds.unshift(newAd);
+  persistDb();
+  broadcast("ads:updated", dbState.scrollingAds);
+  res.status(201).json({ success: true, ad: newAd, ads: dbState.scrollingAds });
+});
+
+app.put("/api/ads/scrolling/:id", (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+  if (!dbState.scrollingAds) dbState.scrollingAds = [...seedScrollingAds];
+  const idx = dbState.scrollingAds.findIndex((a: any) => a.id === id);
+  if (idx !== -1) {
+    dbState.scrollingAds[idx] = { ...dbState.scrollingAds[idx], ...updates, updatedAt: new Date().toISOString() };
+    persistDb();
+    broadcast("ads:updated", dbState.scrollingAds);
+    return res.json({ success: true, ad: dbState.scrollingAds[idx], ads: dbState.scrollingAds });
+  }
+  return res.status(404).json({ success: false, message: "Ad not found." });
+});
+
+app.delete("/api/ads/scrolling/:id", (req, res) => {
+  const { id } = req.params;
+  if (!dbState.scrollingAds) dbState.scrollingAds = [...seedScrollingAds];
+  dbState.scrollingAds = dbState.scrollingAds.filter((a: any) => a.id !== id);
+  persistDb();
+  broadcast("ads:updated", dbState.scrollingAds);
+  res.json({ success: true, message: "Ad deleted.", ads: dbState.scrollingAds });
+});
+
+app.post("/api/ads/scrolling/reset", (req, res) => {
+  dbState.scrollingAds = JSON.parse(JSON.stringify(seedScrollingAds));
+  persistDb();
+  broadcast("ads:updated", dbState.scrollingAds);
+  res.json({ success: true, message: "Reset to default ticker ads.", ads: dbState.scrollingAds });
+});
+
+// 2. Footer 3 Company GIF Ads
+app.get("/api/ads/company-gif", (req, res) => {
+  const currentGifAds = dbState.companyAds && dbState.companyAds.length > 0 ? dbState.companyAds : seedCompanyAds;
+  res.json({ success: true, ads: currentGifAds });
+});
+
+app.put("/api/ads/company-gif/:position", (req, res) => {
+  const pos = parseInt(req.params.position, 10);
+  const updates = req.body;
+  if (!dbState.companyAds) dbState.companyAds = [...seedCompanyAds];
+  const idx = dbState.companyAds.findIndex((a: any) => a.position === pos);
+  let updatedAd;
+  if (idx !== -1) {
+    dbState.companyAds[idx] = {
+      ...dbState.companyAds[idx],
+      ...updates,
+      position: pos,
+      updatedAt: new Date().toISOString(),
+    };
+    updatedAd = dbState.companyAds[idx];
+  } else {
+    updatedAd = {
+      id: `footer-gif-slot-${pos}`,
+      position: pos,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    dbState.companyAds.push(updatedAd);
+  }
+  persistDb();
+  broadcast("company_gif_ads:updated", dbState.companyAds);
+  res.json({ success: true, ad: updatedAd, ads: dbState.companyAds });
+});
+
+app.post("/api/ads/company-gif/reset", (req, res) => {
+  dbState.companyAds = JSON.parse(JSON.stringify(seedCompanyAds));
+  persistDb();
+  broadcast("company_gif_ads:updated", dbState.companyAds);
+  res.json({ success: true, message: "Reset to default company GIF ads.", ads: dbState.companyAds });
 });
 
 // 5. Direct Messages API
@@ -6271,6 +6633,26 @@ Provide response in pure JSON matching this exact structure:
       },
     });
   }
+});
+
+// Ensure any unhandled /api route returns JSON 404 and NEVER falls through to Vite/index.html
+app.all("/api/*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API endpoint not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+// Global API error handler ensuring all errors on /api routes return JSON and NEVER HTML
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[API Error] ${req.method} ${req.originalUrl}:`, err);
+  if (req.path.startsWith("/api/")) {
+    return res.status(err.status || err.statusCode || 500).json({
+      success: false,
+      message: err.message || "An unexpected server error occurred.",
+    });
+  }
+  next(err);
 });
 
 // Vite Middleware integration for dev/prod

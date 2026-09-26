@@ -181,7 +181,11 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
-    setActionNotice({ text, type });
+    const sanitized =
+      text.includes("Unexpected token") || text.includes("is not valid JSON") || text.includes("<html")
+        ? "Unable to sync administrative data from server. Please try again."
+        : text;
+    setActionNotice({ text: sanitized, type });
     setTimeout(() => setActionNotice(null), 4000);
   };
 
@@ -189,7 +193,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [overviewRes, usersRes, postsRes, logsRes, verifRes] = await Promise.all([
+      const [overviewRes, usersRes, postsRes, logsRes, verifRes] = await Promise.allSettled([
         api.getAdminOverview(),
         api.getAdminUsers(),
         api.getAdminPosts(),
@@ -197,14 +201,30 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
         api.getAdminVerificationRequests(),
       ]);
 
-      if (overviewRes.stats) setStats(overviewRes.stats);
-      if (usersRes.users) setUsersList(usersRes.users);
-      if (postsRes.posts) setPostsList(postsRes.posts);
-      if (logsRes.auditLogs) setAuditLogs(logsRes.auditLogs);
-      if (verifRes.requests) setVerificationRequests(verifRes.requests);
+      if (overviewRes.status === "fulfilled" && overviewRes.value?.stats) {
+        setStats(overviewRes.value.stats);
+      }
+      if (usersRes.status === "fulfilled" && usersRes.value?.users) {
+        setUsersList(usersRes.value.users);
+      }
+      if (postsRes.status === "fulfilled" && postsRes.value?.posts) {
+        setPostsList(postsRes.value.posts);
+      }
+      if (logsRes.status === "fulfilled" && logsRes.value?.auditLogs) {
+        setAuditLogs(logsRes.value.auditLogs);
+      }
+      if (verifRes.status === "fulfilled" && verifRes.value?.requests) {
+        setVerificationRequests(verifRes.value.requests);
+      }
+
+      const allFailed = [overviewRes, usersRes, postsRes, logsRes, verifRes].every((r) => r.status === "rejected");
+      if (allFailed) {
+        const firstError: any = (overviewRes as PromiseRejectedResult).reason;
+        showToast(firstError?.message || "Failed to sync admin portal data", "error");
+      }
     } catch (err: any) {
       console.error("Admin data fetch error:", err);
-      showToast(err.message || "Failed to sync admin portal data", "error");
+      showToast(err?.message || "Failed to sync admin portal data", "error");
     } finally {
       setLoading(false);
     }

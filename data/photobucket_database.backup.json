@@ -1,7 +1,36 @@
 {
   "schemaVersion": 5,
-  "lastUpdated": "2026-09-19T10:30:07.717Z",
+  "lastUpdated": "2026-09-26T04:34:54.679Z",
   "users": [
+    {
+      "id": "user_1790395010208",
+      "username": "test_user_817",
+      "fullName": "Test User",
+      "nepaliName": "Test User",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80",
+      "bio": "Nepali Visual Creator 🇳🇵 Sharing perspectives across the Himalayas & culture.",
+      "location": "Kathmandu Metro, Kathmandu, Nepal",
+      "district": "Kathmandu",
+      "city": "Kathmandu Metro",
+      "province": "Bagmati",
+      "followersCount": 0,
+      "followingCount": 1,
+      "postsCount": 0,
+      "isVerified": false,
+      "badge": "New Creator",
+      "accountType": "personal",
+      "role": "user",
+      "status": "active",
+      "isApproved": false,
+      "approvalStatus": "pending_approval",
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testnepali981@example.com",
+      "mobileNumber": "9812345678",
+      "isEmailVerified": true,
+      "createdAt": "2026-09-26T03:56:50.208Z",
+      "isSuperAdmin": false
+    },
     {
       "id": "user_deepak",
       "username": "deepak_subedi",
@@ -23,7 +52,8 @@
       "verificationDocumentName": "Nagarikta_Deepak_Subedi_KTM.pdf",
       "verificationDocumentUrl": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80",
       "accountType": "personal",
-      "role": "user",
+      "role": "super_admin",
+      "isSuperAdmin": true,
       "status": "active",
       "createdAt": "2026-08-10T10:00:00Z",
       "email": "deepaksubedi32@gmail.com",
@@ -32,8 +62,7 @@
       "mobileNumber": "9841234567",
       "isApproved": true,
       "approvalStatus": "approved",
-      "isEmailVerified": true,
-      "isSuperAdmin": false
+      "isEmailVerified": true
     },
     {
       "id": "super_admin_deepak",
@@ -940,6 +969,87 @@
   ],
   "auditLogs": [
     {
+      "id": "log_1790395091164_956",
+      "timestamp": "2026-09-26T03:58:11.164Z",
+      "action": "USER_LOGIN",
+      "category": "AUTH",
+      "actor": "Himalayan Horizon Travels & Expeditions",
+      "details": "User logged in via business portal.",
+      "severity": "info"
+    },
+    {
+      "id": "log_1790395086514_421",
+      "timestamp": "2026-09-26T03:58:06.514Z",
+      "action": "PASSWORD_CHANGED_SUCCESS",
+      "category": "AUTH",
+      "actor": "Himalayan Horizon Travels & Expeditions",
+      "details": "Password successfully updated for user @himalayan_horizon_travels using official email code verified at info@himalayanhorizoneexpeditions.np.",
+      "severity": "info"
+    },
+    {
+      "id": "log_1790395079462_688",
+      "timestamp": "2026-09-26T03:57:59.462Z",
+      "action": "PASSWORD_RESET_CODE_SENT",
+      "category": "AUTH",
+      "actor": "Himalayan Horizon Travels & Expeditions",
+      "details": "Dispatched 6-digit security verification code to official registered email info@himalayanhorizoneexpeditions.np for user @himalayan_horizon_travels. Code valid for 10 minutes.",
+      "severity": "warning"
+    },
+    {
+      "id": "log_1790395010208_150",
+      "timestamp": "2026-09-26T03:56:50.208Z",
+      "action": "USER_REGISTRATION",
+      "category": "AUTH",
+      "actor": "Test User",
+      "details": "New personal registration submitted for testnepali981@example.com (9812345678). Account created and pending Super Admin or Admin verification.",
+      "severity": "info"
+    },
+    {
+      "id": "log_1789831278006_756",
+      "timestamp": "2026-09-19T15:21:18.006Z",
+      "action": "SUPER_ADMIN_LOGIN",
+      "category": "AUTH",
+      "actor": "फोटो Bucket",
+      "details": "Super Admin logged in with root credentials (medeepaksubedi@gmail.com).",
+      "severity": "warning"
+    },
+    {
+      "id": "log_1789831268978_316",
+      "timestamp": "2026-09-19T15:21:08.978Z",
+      "action": "SUPER_ADMIN_LOGIN",
+      "category": "AUTH",
+      "actor": "फोटो Bucket",
+      "details": "Super Admin logged in with root credentials (medeepaksubedi@gmail.com).",
+      "severity": "warning"
+    },
+    {
+      "id": "log_1789831199940_541",
+      "timestamp": "2026-09-19T15:19:59.940Z",
+      "action": "USER_LOGIN",
+      "category": "AUTH",
+      "actor": "Dikshya Gurung",
+      "details": "User logged in via personal portal.",
+      "severity": "info"
+    },
+    {
+      "id": "log_1789831198074_886",
+      "timestamp": "2026-09-19T15:19:58.074Z",
+      "action": "SUPER_ADMIN_LOGIN",
+      "category": "AUTH",
+      "actor": "फोटो Bucket",
+      "details": "Super Admin logged in with root credentials (deepak_subedi).",
+      "severity": "warning"
+    },
+    {
+      "id": "log_1789831115103_504",
+      "timestamp": "2026-09-19T15:18:35.103Z",
+      "action": "SUPER_ADMIN_LOGIN",
+      "category": "AUTH",
+      "actor": "फोटो Bucket",
+      "details": "Super Admin logged in with root credentials (medeepaksubedi@gmail.com).",
+      "severity": "warning"
+    },
+    {
       "id": "log_1",
       "timestamp": "2026-09-19T04:16:58.575Z",
       "action": "SYSTEM_CORE_BOOT",
@@ -1175,6 +1285,9 @@
       "super_admin_deepak"
     ],
     "admin_bibek": [
+      "super_admin_deepak"
+    ],
+    "user_1790395010208": [
       "super_admin_deepak"
     ]
   },

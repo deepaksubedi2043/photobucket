@@ -161,6 +161,13 @@ class ScrollingAdsService {
     this.ads.unshift(newAd);
     this.saveToStorage();
 
+    // Sync with Server API
+    fetch("/api/ads/scrolling", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newAd),
+    }).catch(() => {});
+
     // Async sync with Firestore if online
     this.syncDocToFirestore(newAd).catch(() => {});
     return newAd;
@@ -174,6 +181,13 @@ class ScrollingAdsService {
     this.ads[index] = updated;
     this.saveToStorage();
 
+    // Sync with Server API
+    fetch(`/api/ads/scrolling/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    }).catch(() => {});
+
     this.syncDocToFirestore(updated).catch(() => {});
     return updated;
   }
@@ -183,6 +197,12 @@ class ScrollingAdsService {
     this.ads = this.ads.filter((a) => a.id !== id);
     if (this.ads.length !== beforeLength) {
       this.saveToStorage();
+
+      // Sync with Server API
+      fetch(`/api/ads/scrolling/${id}`, {
+        method: "DELETE",
+      }).catch(() => {});
+
       this.deleteFromFirestore(id).catch(() => {});
       return true;
     }
@@ -194,6 +214,13 @@ class ScrollingAdsService {
     if (!target) return false;
     target.isActive = !target.isActive;
     this.saveToStorage();
+
+    fetch(`/api/ads/scrolling/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: target.isActive }),
+    }).catch(() => {});
+
     this.syncDocToFirestore(target).catch(() => {});
     return target.isActive;
   }
@@ -203,11 +230,17 @@ class ScrollingAdsService {
     if (!target) return;
     target.clickCount = (target.clickCount || 0) + 1;
     this.saveToStorage();
+    fetch(`/api/ads/scrolling/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clickCount: target.clickCount }),
+    }).catch(() => {});
   }
 
   public resetToDefaults(): ScrollingAdItem[] {
     this.ads = [...DEFAULT_SCROLLING_ADS];
     this.saveToStorage();
+    fetch("/api/ads/scrolling/reset", { method: "POST" }).catch(() => {});
     return this.getAds();
   }
 
