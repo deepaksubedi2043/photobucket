@@ -35,7 +35,7 @@ import {
 import { VerifiedBadge } from "./VerifiedBadge";
 import { VerificationRequestModal } from "./VerificationRequestModal";
 import { NepalLocationSelector } from "./NepalLocationSelector";
-import { api } from "../services/api";
+import { api, safeJsonFetch } from "../services/api";
 import { useSessionDuration } from "../hooks/useSessionDuration";
 
 interface UserProfileModalProps {
@@ -225,14 +225,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setSystemNotice(null);
 
     try {
-      const res = await fetch(`/api/users/${user.id}/check-username`, {
+      const data = await safeJsonFetch(`/api/users/${user.id}/check-username`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: cleanU }),
       });
-      const data = await res.json();
 
-      if (res.ok && data.eligible) {
+      if (data && data.eligible) {
         setUsernameCheckResult({
           status: "available",
           message: data.message || `Username @${cleanU} is available!`,
@@ -248,10 +247,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           message: data.message || "Username verification failed.",
         });
       }
-    } catch {
+    } catch (err: any) {
       setUsernameCheckResult({
         status: "error",
-        message: "Unable to verify username. Please try again.",
+        message: err.message || "Unable to verify username. Please try again.",
       });
     } finally {
       setIsCheckingUsername(false);
@@ -277,24 +276,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setSystemNotice(null);
 
     try {
-      const res = await fetch(`/api/users/${user.id}/profile`, {
+      const data = await safeJsonFetch(`/api/users/${user.id}/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Backend prevented change (e.g. 30 days username limit, uniqueness, 7 days bio limit)
-        setSystemNotice({
-          type: "error",
-          field: data.field,
-          message: data.message || "Failed to update profile.",
-        });
-        setIsSaving(false);
-        return;
-      }
 
       // Success
       setSystemNotice({
@@ -310,10 +296,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         setIsEditing(false);
         setSystemNotice(null);
       }, 1500);
-    } catch {
+    } catch (err: any) {
       setSystemNotice({
         type: "error",
-        message: "Network error occurred while updating profile.",
+        field: err.field,
+        message: err.message || "Failed to update profile.",
       });
     } finally {
       setIsSaving(false);

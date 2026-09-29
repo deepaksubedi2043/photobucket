@@ -231,71 +231,63 @@ export const api = {
     userId?: string;
     testSimulationType?: string;
   }): Promise<AIContentVerificationResult> {
-    const res = await fetch("/api/ai/verify-content", {
+    return safeJsonFetch<AIContentVerificationResult>("/api/ai/verify-content", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    return res.json();
   },
 
   async toggleLike(postId: string, userId: string): Promise<any> {
-    const res = await fetch(`/api/posts/${postId}/like`, {
+    return safeJsonFetch(`/api/posts/${postId}/like`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    return res.json();
   },
 
   async addComment(postId: string, userId: string, text: string, nepaliText?: string): Promise<any> {
-    const res = await fetch(`/api/posts/${postId}/comments`, {
+    return safeJsonFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, text, nepaliText }),
     });
-    return res.json();
   },
 
   async toggleSave(postId: string, userId: string): Promise<any> {
-    const res = await fetch(`/api/posts/${postId}/save`, {
+    return safeJsonFetch(`/api/posts/${postId}/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    return res.json();
   },
 
   async createStory(storyData: { userId: string; imageUrl: string; caption?: string; location?: string }): Promise<any> {
-    const res = await fetch("/api/stories", {
+    return safeJsonFetch("/api/stories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(storyData),
     });
-    return res.json();
   },
 
   async getMessages(userId: string, otherUserId: string): Promise<{ messages: DirectMessage[] }> {
-    const res = await fetch(`/api/messages?userId=${userId}&otherUserId=${otherUserId}`);
-    return res.json();
+    return safeJsonFetch<{ messages: DirectMessage[] }>(`/api/messages?userId=${userId}&otherUserId=${otherUserId}`);
   },
 
   async sendMessage(msg: { senderId: string; receiverId: string; text: string; imageUrl?: string }): Promise<any> {
-    const res = await fetch("/api/messages", {
+    return safeJsonFetch("/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(msg),
     });
-    return res.json();
   },
 
   async generateAiCaption(data: { location: string; category?: string; userPrompt?: string; imageDescription?: string }): Promise<any> {
-    const res = await fetch("/api/gemini/generate-caption", {
+    return safeJsonFetch("/api/gemini/generate-caption", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    return res.json();
   },
 
   async registerPersonal(data: {
@@ -321,22 +313,11 @@ export const api = {
     accountExists?: boolean;
     isEmailVerified?: boolean;
   }> {
-    const res = await fetch("/api/auth/register/personal", {
+    return safeJsonFetch("/api/auth/register/personal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const err: any = new Error(json.message || "Failed to register personal user");
-      err.accountExists = json.accountExists;
-      err.isEmailVerified = json.isEmailVerified;
-      err.email = json.email;
-      err.verifyLink = json.verifyLink;
-      err.token = json.token;
-      throw err;
-    }
-    return json;
   },
 
   async registerBusiness(data: {
@@ -364,22 +345,11 @@ export const api = {
     accountExists?: boolean;
     isEmailVerified?: boolean;
   }> {
-    const res = await fetch("/api/auth/register/business", {
+    return safeJsonFetch("/api/auth/register/business", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const err: any = new Error(json.message || "Failed to register business organisation");
-      err.accountExists = json.accountExists;
-      err.isEmailVerified = json.isEmailVerified;
-      err.email = json.email;
-      err.verifyLink = json.verifyLink;
-      err.token = json.token;
-      throw err;
-    }
-    return json;
   },
 
   async verifyEmail(params: {
@@ -392,14 +362,11 @@ export const api = {
     user?: User;
     email?: string;
   }> {
-    const res = await fetch("/api/auth/verify-email", {
+    return safeJsonFetch("/api/auth/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Email verification failed");
-    return json;
   },
 
   async resendVerification(data: {
@@ -414,14 +381,11 @@ export const api = {
     officialNotification?: any;
     isAlreadyVerified?: boolean;
   }> {
-    const res = await fetch("/api/auth/resend-verification", {
+    return safeJsonFetch("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to resend verification link");
-    return json;
   },
 
   async boostPost(
@@ -435,14 +399,11 @@ export const api = {
       boostedBy?: string;
     }
   ): Promise<{ success: boolean; post: Post; message: string }> {
-    const res = await fetch(`/api/posts/${postId}/boost`, {
+    return safeJsonFetch(`/api/posts/${postId}/boost`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(boostData),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to boost post");
-    return json;
   },
 
   async login(data: {
@@ -492,14 +453,11 @@ export const api = {
       expiresInMinutes: number;
     };
   }> {
-    const res = await fetch("/api/auth/request-password-code", {
+    return safeJsonFetch("/api/auth/request-password-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to request verification code");
-    return json;
   },
 
   async verifyAndChangePassword(data: {
@@ -514,39 +472,30 @@ export const api = {
     userId?: string;
     username?: string;
   }> {
-    const res = await fetch("/api/auth/change-password-with-code", {
+    return safeJsonFetch("/api/auth/change-password-with-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to change password");
-    return json;
   },
 
   async changePasswordDirect(
     userId: string,
     data: { currentPassword?: string; newPassword: string; confirmPassword: string }
   ): Promise<{ success: boolean; message: string; userId?: string }> {
-    const res = await fetch(`/api/users/${userId}/change-password`, {
+    return safeJsonFetch(`/api/users/${userId}/change-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to change password");
-    return json;
   },
 
   async deleteStory(storyId: string, userId?: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`/api/stories/${storyId}`, {
+    return safeJsonFetch(`/api/stories/${storyId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to delete story");
-    return json;
   },
 
   // ==========================================
@@ -618,50 +567,34 @@ export const api = {
     isNewUser?: boolean;
     pendingApproval?: boolean;
   }> {
-    const res = await fetch("/api/auth/google", {
+    return safeJsonFetch("/api/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const err: any = new Error(json.message || "Google authentication failed");
-      err.pendingApproval = json.pendingApproval;
-      err.isNewUser = json.isNewUser;
-      throw err;
-    }
-    return json;
   },
 
   async approveUserRegistration(id: string): Promise<{ success: boolean; message: string; user: User }> {
-    const res = await fetch(`/api/admin/users/${id}/approve-registration`, {
+    return safeJsonFetch(`/api/admin/users/${id}/approve-registration`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to approve user registration");
-    return json;
   },
 
   async rejectUserRegistration(id: string, reason?: string): Promise<{ success: boolean; message: string; user: User }> {
-    const res = await fetch(`/api/admin/users/${id}/reject-registration`, {
+    return safeJsonFetch(`/api/admin/users/${id}/reject-registration`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to reject user registration");
-    return json;
   },
 
   async resetAdminUserPassword(id: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`/api/admin/users/${id}/reset-password`, {
+    return safeJsonFetch(`/api/admin/users/${id}/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newPassword }),
     });
-    if (!res.ok) throw new Error("Failed to reset user password");
-    return res.json();
   },
 
   async getAdminPosts(): Promise<{ success: boolean; posts: Post[] }> {
@@ -753,9 +686,7 @@ export const api = {
     if (params?.visibility) query.append("visibility", params.visibility);
     if (params?.search) query.append("search", params.search);
 
-    const res = await fetch(`/api/pages-groups?${query.toString()}`);
-    if (!res.ok) throw new Error("Failed to fetch pages and groups");
-    return res.json();
+    return safeJsonFetch(`/api/pages-groups?${query.toString()}`);
   },
 
   async checkPageGroupName(data: {
@@ -763,12 +694,11 @@ export const api = {
     type?: string;
     userDistrict?: string;
   }): Promise<NameCheckResult> {
-    const res = await fetch("/api/pages-groups/check-name", {
+    return safeJsonFetch<NameCheckResult>("/api/pages-groups/check-name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    return res.json();
   },
 
   async createPageOrGroup(
@@ -785,44 +715,33 @@ export const api = {
     isSimilar?: boolean;
     suggestions?: string[];
   }> {
-    const res = await fetch("/api/pages-groups", {
+    return safeJsonFetch("/api/pages-groups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok && !json.isSimilar && !json.quotaExceeded) {
-      throw new Error(json.message || "Failed to create page or group");
-    }
-    return json;
   },
 
   async toggleJoinPageOrGroup(
     id: string,
     userId: string
   ): Promise<{ success: boolean; isMember: boolean; item: PageOrGroup }> {
-    const res = await fetch(`/api/pages-groups/${id}/join-toggle`, {
+    return safeJsonFetch(`/api/pages-groups/${id}/join-toggle`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to toggle membership");
-    return json;
   },
 
   async deletePageOrGroup(
     id: string,
     userId: string
   ): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`/api/pages-groups/${id}`, {
+    return safeJsonFetch(`/api/pages-groups/${id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to delete page or group");
-    return json;
   },
 
   // ==========================================
@@ -832,23 +751,18 @@ export const api = {
     success: boolean;
     violations: GuidelineViolationAlert[];
   }> {
-    const res = await fetch("/api/admin/guideline-violations");
-    if (!res.ok) throw new Error("Failed to fetch guideline violations");
-    return res.json();
+    return safeJsonFetch("/api/admin/guideline-violations");
   },
 
   async actionGuidelineViolation(
     id: string,
     data: { action: "confirm_banned" | "dismissed"; adminNotes?: string }
   ): Promise<{ success: boolean; violation: GuidelineViolationAlert; message: string }> {
-    const res = await fetch(`/api/admin/guideline-violations/${id}/action`, {
+    return safeJsonFetch(`/api/admin/guideline-violations/${id}/action`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to resolve guideline violation");
-    return json;
   },
 
   async verifyPostNow(id: string): Promise<{
@@ -857,13 +771,10 @@ export const api = {
     message: string;
     post: Post;
   }> {
-    const res = await fetch(`/api/posts/${id}/verify-now`, {
+    return safeJsonFetch(`/api/posts/${id}/verify-now`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to verify post");
-    return json;
   },
 
   // Two-way Followers Online API
@@ -875,10 +786,7 @@ export const api = {
     onlineCount: number;
     totalTwoWayCount: number;
   }> {
-    const res = await fetch(`/api/users/${userId}/followers-online`);
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch online followers");
-    return json;
+    return safeJsonFetch(`/api/users/${userId}/followers-online`);
   },
 
   async toggleFollow(
@@ -892,14 +800,11 @@ export const api = {
     targetUser: User;
     message: string;
   }> {
-    const res = await fetch(`/api/users/${currentUserId}/follow`, {
+    return safeJsonFetch(`/api/users/${currentUserId}/follow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ targetUserId }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to toggle follow");
-    return json;
   },
 
   async togglePresence(
@@ -911,14 +816,11 @@ export const api = {
     isOnline: boolean;
     activeUsers: string[];
   }> {
-    const res = await fetch(`/api/users/presence/toggle`, {
+    return safeJsonFetch(`/api/users/presence/toggle`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, isOnline }),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to toggle presence");
-    return json;
   },
 
   // ==========================================
@@ -1061,12 +963,9 @@ export const api = {
     lastMutationTime: number;
     timestamp: string;
   }> {
-    const res = await fetch("/api/system/version", {
+    return safeJsonFetch("/api/system/version", {
       headers: { "Cache-Control": "no-cache" },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to retrieve system version");
-    return json;
   },
 
   async triggerLiveSync(data?: { reason?: string; scope?: string }): Promise<{
@@ -1074,14 +973,11 @@ export const api = {
     message: string;
     lastMutationTime: number;
   }> {
-    const res = await fetch("/api/system/trigger-live-sync", {
+    return safeJsonFetch("/api/system/trigger-live-sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data || {}),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to trigger live sync");
-    return json;
   },
 };
 

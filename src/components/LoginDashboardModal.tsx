@@ -323,7 +323,20 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
         setError(err.message || "An account with this email exists but is not verified. Please click the verification link.");
         return;
       }
-      setError(err.message || "Registration failed. Please try again.");
+      const rawMsg = err.message || "";
+      const isSyntaxOrHtml =
+        rawMsg.includes("Unexpected token") ||
+        rawMsg.includes("is not valid JSON") ||
+        rawMsg.includes("<html") ||
+        rawMsg.includes("<!DOCTYPE");
+
+      const cleanError = isSyntaxOrHtml
+        ? language === "ne"
+          ? "दर्ता सेवा सिङ्क हुँदैछ। कृपया केही क्षणमा पुन: प्रयास गर्नुहोस्।"
+          : "Registration service is connecting. Please try again in a moment."
+        : rawMsg || (language === "ne" ? "दर्ता असफल भयो। कृपया विवरण जाँच गरी पुन: प्रयास गर्नुहोस्।" : "Registration failed. Please verify your details and try again.");
+
+      setError(cleanError);
     } finally {
       setLoading(false);
     }
@@ -430,7 +443,20 @@ export const LoginDashboardModal: React.FC<LoginDashboardModalProps> = ({
         setError(err.message || "An account with this email exists but is not verified. Please click the verification link.");
         return;
       }
-      setError(err.message || "Business registration failed. Please try again.");
+      const rawMsg = err.message || "";
+      const isSyntaxOrHtml =
+        rawMsg.includes("Unexpected token") ||
+        rawMsg.includes("is not valid JSON") ||
+        rawMsg.includes("<html") ||
+        rawMsg.includes("<!DOCTYPE");
+
+      const cleanError = isSyntaxOrHtml
+        ? language === "ne"
+          ? "कम्पनी दर्ता सेवा सिङ्क हुँदैछ। कृपया केही क्षणमा पुन: प्रयास गर्नुहोस्।"
+          : "Business registration service is connecting. Please try again in a moment."
+        : rawMsg || (language === "ne" ? "कम्पनी दर्ता असफल भयो। कृपया विवरण जाँच गरी पुन: प्रयास गर्नुहोस्।" : "Business registration failed. Please verify your details and try again.");
+
+      setError(cleanError);
     } finally {
       setLoading(false);
     }
