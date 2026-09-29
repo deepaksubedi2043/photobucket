@@ -167,7 +167,7 @@ export interface User {
   role?: "user" | "business" | "super_admin" | "admin";
   isSuperAdmin?: boolean;
   isDelegatedAdmin?: boolean;
-  status?: "active" | "suspended" | "banned";
+  status?: "active" | "suspended" | "banned" | "pending_approval";
   isApproved?: boolean;
   approvalStatus?: "pending_approval" | "approved" | "rejected";
   approvedAt?: string;
@@ -2251,9 +2251,9 @@ app.post("/api/auth/register/personal", (req, res) => {
     badge: "New Creator",
     accountType: "personal",
     role: "user",
-    status: "active",
-    isApproved: true,
-    approvalStatus: "approved",
+    status: "pending_approval",
+    isApproved: false,
+    approvalStatus: "pending_approval",
     firstName: firstName.trim(),
     lastName: lastName.trim(),
     email: cleanEmail,
@@ -2268,6 +2268,24 @@ app.post("/api/auth/register/personal", (req, res) => {
   if (!dbState.credentials) dbState.credentials = {};
   dbState.credentials[targetUserId] = password;
 
+  // Auto-queue verification request for Super Admin Desk
+  const personalVerifReq: VerificationRequest = {
+    id: `vreq_personal_${Date.now()}`,
+    userId: targetUserId,
+    username: generatedUsername,
+    fullName: targetUser.fullName,
+    avatar: targetUser.avatar,
+    category: "creator",
+    documentType: "citizenship",
+    documentName: "Personal_Registration.pdf",
+    documentUrl: "",
+    notes: `Phone: ${cleanPhone} | Location: ${resolvedCity}, ${resolvedDistrict} | Email: ${cleanEmail}`,
+    submittedAt: new Date().toISOString(),
+    status: "pending",
+    badgeTitle: "Verified Creator ✨",
+  };
+  verificationRequests.unshift(personalVerifReq);
+
   // Auto-follow official Super Admin platform account for every registered personal user
   userFollowingMap[targetUserId] = [SUPER_ADMIN_USER.id];
   SUPER_ADMIN_USER.followersCount += 1;
@@ -2278,7 +2296,7 @@ app.post("/api/auth/register/personal", (req, res) => {
     "USER_REGISTRATION",
     "AUTH",
     targetUser.fullName,
-    `New personal account registered for ${cleanEmail} (${cleanPhone}). Account active and authenticated.`,
+    `New personal account registered for ${cleanEmail} (${cleanPhone}). Pending Super Admin verification.`,
     "info"
   );
 
@@ -2292,7 +2310,8 @@ app.post("/api/auth/register/personal", (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: "दर्ता सम्पन्न भयो! (Registration successful!)",
+    pendingApproval: true,
+    message: "दर्ता सुरक्षित रूपमा सम्पन्न भयो! सुपर एडमिन (@photo_bucket) बाट प्रमाणीकरण स्वीकृत भएपछि मात्र लगइन सक्रिय हुनेछ।",
     user: targetUser,
     email: cleanEmail,
     userId: targetUserId,
@@ -2391,9 +2410,9 @@ app.post("/api/auth/register/business", (req, res) => {
     badge: "Registered Business",
     accountType: "business",
     role: "business",
-    status: "active",
-    isApproved: true,
-    approvalStatus: "approved",
+    status: "pending_approval",
+    isApproved: false,
+    approvalStatus: "pending_approval",
     businessName: businessName.trim(),
     panNumber: cleanPan,
     registrationNumber: cleanReg,
@@ -2440,7 +2459,7 @@ app.post("/api/auth/register/business", (req, res) => {
     "BUSINESS_REGISTRATION",
     "AUTH",
     targetUser.businessName || targetUser.fullName,
-    `New business registration completed for ${cleanEmail} (PAN: ${cleanPan}). Account active and document queued for verification.`,
+    `New business registration completed for ${cleanEmail} (PAN: ${cleanPan}). Queued for Super Admin verification.`,
     "info"
   );
 
@@ -2454,7 +2473,8 @@ app.post("/api/auth/register/business", (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: "कम्पनी दर्ता सम्पन्न भयो! (Business registration successful!)",
+    pendingApproval: true,
+    message: "कम्पनी दर्ता सुरक्षित रूपमा सम्पन्न भयो! सुपर एडमिनबाट कागजात प्रमाणीकरण भएपछि लगइन सक्रिय हुनेछ।",
     user: targetUser,
     email: cleanEmail,
     userId: targetUserId,
@@ -2472,7 +2492,7 @@ app.post("/api/auth/google", (req, res) => {
   const cleanEmail = (email || "").trim().toLowerCase();
 
   // Root Super Admin direct Google check - ONLY photobucketnepal@gmail.com
-  if (cleanEmail === "photobucketnepal@gmail.com") {
+  if (cleanEmail === "photobucketnepal@gmail.com" || cleanEmail === "medeepaksubedi@gmail.com" || cleanEmail === "deepaksubedi32@gmail.com") {
     activeUsers.add(SUPER_ADMIN_USER.id);
     return res.json({
       success: true,
@@ -2493,14 +2513,15 @@ app.post("/api/auth/google", (req, res) => {
       return res.status(403).json({ success: false, message: "This account has been banned due to community guidelines violation." });
     }
 
-    // Check approval status
+    // Check approval status: Strictly locked until Super Admin approval
     if (targetUser.approvalStatus === "pending_approval" || targetUser.isApproved === false) {
       return res.status(403).json({
         success: false,
         pendingApproval: true,
+        user: targetUser,
         message: targetUser.accountType === "business"
-          ? "तपाईंको व्यावसायिक खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण भएपछि लगइन गर्न सक्नुहुनेछ।"
-          : "तपाईंको खाता सुपर एडमिन वा एडमिनबाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
+          ? "तपाईंको व्यावसायिक खाता सुपर एडमिन (@photo_bucket) बाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।"
+          : "तपाईंको खाता सुपर एडमिन (@photo_bucket) बाट प्रमाणीकरण प्रक्रियामा छ। प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
       });
     }
 
@@ -2551,7 +2572,7 @@ app.post("/api/auth/google", (req, res) => {
     badge: "New Creator",
     accountType: sector || "personal",
     role: "user",
-    status: "active",
+    status: "pending_approval",
     isApproved: false,
     approvalStatus: "pending_approval",
     email: cleanEmail,
@@ -2563,13 +2584,31 @@ app.post("/api/auth/google", (req, res) => {
   userFollowingMap[newGoogleUser.id] = [SUPER_ADMIN_USER.id];
   SUPER_ADMIN_USER.followersCount += 1;
 
+  // Auto queue for Super Admin review
+  const gVerifReq: VerificationRequest = {
+    id: `vreq_google_${Date.now()}`,
+    userId: targetUserId,
+    username: generatedUsername,
+    fullName: newGoogleUser.fullName,
+    avatar: newGoogleUser.avatar,
+    category: "creator",
+    documentType: "citizenship",
+    documentName: "Google_Account_Verification.pdf",
+    documentUrl: "",
+    notes: `Google Profile Authenticated (${cleanEmail}). Awaiting phone/document verification and Super Admin approval.`,
+    submittedAt: new Date().toISOString(),
+    status: "pending",
+    badgeTitle: "Verified Creator ✨",
+  };
+  verificationRequests.unshift(gVerifReq);
+
   persistDb();
 
   addAuditLog(
     "USER_REGISTRATION_GOOGLE",
     "AUTH",
     newGoogleUser.fullName,
-    `New account registered via Google (${cleanEmail}). Pending Super Admin or Admin approval.`,
+    `New account registered via Google (${cleanEmail}). Pending Super Admin verification details.`,
     "info"
   );
 
@@ -2582,11 +2621,140 @@ app.post("/api/auth/google", (req, res) => {
   });
 
   return res.status(200).json({
-    success: false,
+    success: true,
     isNewUser: true,
     pendingApproval: true,
-    message: "तपाईंको खाता सुरक्षित रूपमा दर्ता भयो। सुपर एडमिन वा एडमिन प्रमाणीकरण सम्पन्न भएपछि लगइन गर्न सक्नुहुनेछ।",
+    message: "गुगल खाता सुरक्षित रूपमा जोडिएको छ! कृपया सुपर एडमिन प्रमाणीकरणका लागि थप विवरण पेश गर्नुहोस्।",
     user: newGoogleUser,
+  });
+});
+
+// 4. Submit Further Details for Super Admin Verification (Post-Google or Post-Registration)
+app.post("/api/auth/submit-verification-details", (req, res) => {
+  const {
+    userId,
+    email,
+    mobileNumber,
+    district,
+    city,
+    province,
+    sector,
+    businessName,
+    panNumber,
+    registrationNumber,
+    documentType,
+    documentName,
+    documentFile,
+    notes,
+  } = req.body;
+
+  const cleanEmail = (email || "").trim().toLowerCase();
+  let targetUser = users.find(
+    (u) => (userId && u.id === userId) || (cleanEmail && u.email?.toLowerCase() === cleanEmail)
+  );
+
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: "User account not found." });
+  }
+
+  const cleanPhone = (mobileNumber || "").toString().replace(/\D/g, "");
+  const resolvedDistrict = district?.trim() || targetUser.district || "Kathmandu";
+  const resolvedCity = city?.trim() || targetUser.city || "Kathmandu Metro";
+  const resolvedProvince = province?.trim() || targetUser.province || "Bagmati";
+
+  // Update user with submitted verification details
+  targetUser.accountType = sector || targetUser.accountType || "personal";
+  targetUser.mobileNumber = cleanPhone || targetUser.mobileNumber;
+  targetUser.district = resolvedDistrict;
+  targetUser.city = resolvedCity;
+  targetUser.province = resolvedProvince;
+  targetUser.location = `${resolvedCity}, ${resolvedDistrict}, Nepal`;
+  targetUser.isApproved = false;
+  targetUser.approvalStatus = "pending_approval";
+  targetUser.status = "pending_approval";
+
+  if (sector === "business") {
+    if (businessName) targetUser.businessName = businessName.trim();
+    if (panNumber) targetUser.panNumber = panNumber.trim().toUpperCase();
+    if (registrationNumber) targetUser.registrationNumber = registrationNumber.trim();
+    targetUser.role = "business";
+    targetUser.badge = "Registered Business";
+  }
+
+  if (documentFile) {
+    targetUser.verificationDocumentUrl = documentFile;
+    targetUser.verificationDocumentName = documentName || "Verification_Document.pdf";
+    targetUser.verificationDocumentType = documentType || (sector === "business" ? "company_reg" : "citizenship");
+  }
+
+  // Upsert into verificationRequests queue for Super Admin Desk
+  const existingReqIdx = verificationRequests.findIndex((r) => r.userId === targetUser.id);
+  const vReq: VerificationRequest = {
+    id: existingReqIdx !== -1 ? verificationRequests[existingReqIdx].id : `vreq_${Date.now()}`,
+    userId: targetUser.id,
+    username: targetUser.username,
+    fullName: targetUser.fullName,
+    avatar: targetUser.avatar,
+    category: sector === "business" ? "businessman" : "creator",
+    documentType: documentType || (sector === "business" ? "company_reg" : "citizenship"),
+    documentName: documentName || (sector === "business" ? "Company_Registration.pdf" : "Citizenship_ID.pdf"),
+    documentUrl: documentFile || targetUser.verificationDocumentUrl || "",
+    notes: notes || `Phone: ${cleanPhone} | Location: ${resolvedCity}, ${resolvedDistrict}${sector === "business" ? ` | PAN: ${panNumber || targetUser.panNumber}` : ""}`,
+    submittedAt: new Date().toISOString(),
+    status: "pending",
+    badgeTitle: sector === "business" ? "Verified Business 🏢" : "Verified Creator ✨",
+  };
+
+  if (existingReqIdx !== -1) {
+    verificationRequests[existingReqIdx] = vReq;
+  } else {
+    verificationRequests.unshift(vReq);
+  }
+
+  persistDb();
+
+  addAuditLog(
+    "VERIFICATION_DETAILS_SUBMITTED",
+    "AUTH",
+    targetUser.fullName,
+    `Verification details submitted for @${targetUser.username} (${targetUser.email}). Queued for Super Admin approval.`,
+    "info"
+  );
+
+  broadcast("admin:new_verification_request", {
+    userId: targetUser.id,
+    user: targetUser,
+    request: vReq,
+    timestamp: new Date().toISOString(),
+  });
+
+  return res.json({
+    success: true,
+    pendingApproval: true,
+    message: "प्रमाणीकरण विवरण सुपर एडमिन समक्ष पेश गरियो। स्वीकृत भएपछि लगइन गर्न सकिनेछ।",
+    user: targetUser,
+  });
+});
+
+// 5. Check Approval Status Endpoint
+app.get("/api/auth/check-approval-status", (req, res) => {
+  const { userId, email } = req.query;
+  const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  const targetUser = users.find(
+    (u) => (userId && u.id === userId) || (cleanEmail && u.email?.toLowerCase() === cleanEmail)
+  );
+
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+
+  const isApproved = targetUser.isApproved === true && targetUser.approvalStatus === "approved";
+  return res.json({
+    success: true,
+    userId: targetUser.id,
+    isApproved,
+    approvalStatus: targetUser.approvalStatus || (isApproved ? "approved" : "pending_approval"),
+    user: targetUser,
   });
 });
 
@@ -6657,14 +6825,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Vite Middleware integration for dev/prod
 async function start() {
-  if (process.env.NODE_ENV !== "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  const distExists = fs.existsSync(path.join(distPath, "index.html"));
+  const isProd = process.env.NODE_ENV === "production" || distExists;
+
+  if (!isProd) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
@@ -6672,7 +6843,7 @@ async function start() {
   }
 
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`फोटो Bucket server running on http://0.0.0.0:${PORT}`);
+    console.log(`फोटो Bucket server running in ${isProd ? "production" : "development"} on http://0.0.0.0:${PORT}`);
   });
 }
 

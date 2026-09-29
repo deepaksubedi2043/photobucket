@@ -3,6 +3,7 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDocFromServer,
   query,
   orderBy,
   limit,
@@ -51,6 +52,8 @@ export const firestoreSync = {
           bio: user.bio || "",
           location: user.location || "",
           district: user.district || "Kathmandu",
+          city: user.city || "Kathmandu Metro",
+          province: user.province || "Bagmati",
           followersCount: user.followersCount || 0,
           followingCount: user.followingCount || 0,
           postsCount: user.postsCount || 0,
@@ -58,6 +61,23 @@ export const firestoreSync = {
           isEmailVerified: !!user.isEmailVerified,
           accountType: user.accountType || "personal",
           role: user.role || "user",
+          isSuperAdmin: !!user.isSuperAdmin,
+          isApproved: user.isApproved ?? (user.isSuperAdmin || user.role === "super_admin" ? true : false),
+          approvalStatus: user.approvalStatus || (user.isSuperAdmin || user.role === "super_admin" ? "approved" : "pending_approval"),
+          approvedAt: user.approvedAt || null,
+          approvedBy: user.approvedBy || null,
+          approvalRejectionReason: user.approvalRejectionReason || null,
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          mobileNumber: user.mobileNumber || "",
+          businessName: user.businessName || "",
+          panNumber: user.panNumber || "",
+          registrationNumber: user.registrationNumber || "",
+          verificationDocumentUrl: user.verificationDocumentUrl || "",
+          verificationDocumentName: user.verificationDocumentName || "",
+          verificationDocumentType: user.verificationDocumentType || "",
+          verificationSubmittedAt: user.verificationSubmittedAt || new Date().toISOString(),
+          status: user.status || (user.isSuperAdmin ? "active" : "pending_approval"),
           createdAt: user.createdAt || new Date().toISOString(),
           email: user.email || "",
         },
@@ -65,6 +85,21 @@ export const firestoreSync = {
       );
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  // Get user profile from Firestore
+  async getUser(userId: string): Promise<User | null> {
+    const path = `users/${userId}`;
+    try {
+      const docSnap = await getDocFromServer(doc(db, "users", userId));
+      if (docSnap.exists()) {
+        return docSnap.data() as User;
+      }
+      return null;
+    } catch (error) {
+      // Offline fallback: don't throw fatal error on optional lookup
+      return null;
     }
   },
 

@@ -78,7 +78,7 @@ export interface User {
   role?: "user" | "business" | "super_admin" | "admin";
   isSuperAdmin?: boolean;
   isDelegatedAdmin?: boolean;
-  status?: "active" | "suspended" | "banned";
+  status?: "active" | "suspended" | "banned" | "pending_approval";
   isApproved?: boolean;
   approvalStatus?: "pending_approval" | "approved" | "rejected";
   approvedAt?: string;

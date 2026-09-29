@@ -103,11 +103,23 @@ export default function App() {
   const [showNotificationsPopover, setShowNotificationsPopover] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authInitialSector, setAuthInitialSector] = useState<"personal" | "business">("personal");
-  const [authInitialMode, setAuthInitialMode] = useState<"login" | "register" | "forgot_password" | "email_verification">("register");
+  const [authInitialMode, setAuthInitialMode] = useState<"login" | "register" | "forgot_password" | "email_verification" | "verification_details" | "pending_approval">("register");
   const [isSuperAdminPortalOpen, setIsSuperAdminPortalOpen] = useState(false);
   const [isSuperAdminLoginOpen, setIsSuperAdminLoginOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     try {
+      const savedUserStr = localStorage.getItem("photobucket_current_user");
+      if (savedUserStr) {
+        const u = JSON.parse(savedUserStr);
+        if (
+          !u.isSuperAdmin &&
+          u.role !== "super_admin" &&
+          u.email?.toLowerCase() !== "photobucketnepal@gmail.com" &&
+          (u.isApproved === false || u.approvalStatus === "pending_approval" || u.approvalStatus === "rejected")
+        ) {
+          return false;
+        }
+      }
       const stored = localStorage.getItem("photobucket_is_logged_in");
       if (stored !== null) return stored === "true";
     } catch {}
